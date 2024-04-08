@@ -1,0 +1,6 @@
+{
+  "manifest_version": 3,
+  "name": "work-time-tracker",
+  "description": "Tracks the time spent on task during work",
+  "version": "1.0"
+}

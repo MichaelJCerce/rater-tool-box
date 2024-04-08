@@ -4,6 +4,7 @@
   "description": "Tracks the time spent on task during work",
   "version": "1.0",
   "action": {
+    "default_popup": "./popup/popup.html",
     "default_icon": "./images/good_pace.png"
   }
 }

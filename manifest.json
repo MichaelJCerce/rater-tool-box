@@ -2,5 +2,8 @@
   "manifest_version": 3,
   "name": "work-time-tracker",
   "description": "Tracks the time spent on task during work",
-  "version": "1.0"
+  "version": "1.0",
+  "action": {
+    "default_icon": "./images/good_pace.png"
+  }
 }

@@ -6,8 +6,17 @@
   "icons": {
     "16": "./images/good_pace.png"
   },
+  "background": {
+    "service_worker": "background.js"
+  },
   "action": {
     "default_icon": "./images/good_pace.png",
     "default_popup": "./popup/popup.html"
-  }
+  },
+  "content_scripts": [
+    {
+      "js": ["./scripts/update-time.js"],
+      "matches": ["https://www.raterhub.com/evaluation/rater/task/show*"]
+    }
+  ]
 }

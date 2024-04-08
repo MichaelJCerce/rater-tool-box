@@ -1,10 +1,13 @@
 {
   "manifest_version": 3,
-  "name": "work-time-tracker",
-  "description": "Tracks the time spent on task during work",
+  "name": "Work Time Tracker",
   "version": "1.0",
+  "description": "Automatically tracks the time spent on completed tasks throughout the work day.",
+  "icons": {
+    "16": "./images/good_pace.png"
+  },
   "action": {
-    "default_popup": "./popup/popup.html",
-    "default_icon": "./images/good_pace.png"
+    "default_icon": "./images/good_pace.png",
+    "default_popup": "./popup/popup.html"
   }
 }

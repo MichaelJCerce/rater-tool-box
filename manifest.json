@@ -18,5 +18,8 @@
       "js": ["./scripts/update-time.js"],
       "matches": ["https://www.raterhub.com/evaluation/rater/task/show*"]
     }
+  ],
+  "permissions": [
+    "storage"
   ]
 }

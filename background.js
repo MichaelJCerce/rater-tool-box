@@ -28,4 +28,10 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
       },
     });
   }
+  chrome.action.setBadgeText({
+    text: `${(
+      Math.floor(request.minutesWorked / 60) +
+      Math.ceil((request.minutesWorked % 60) / 6) * 0.1
+    ).toFixed(1)}`,
+  });
 });

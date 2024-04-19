@@ -34,17 +34,19 @@ async function calcTimeWorked(e) {
 
   if (!task.submitted) {
     totalAET += task.aet;
-    minutesWorked += Math.round((Date.now() - task.startTime) / 1000 / 60);
     task.submitted = true;
-
-    await chrome.storage.local.set({
-      totalAET,
-      minutesWorked,
-      task,
-    });
-
-    chrome.runtime.sendMessage({ totalAET, minutesWorked });
   }
+
+  minutesWorked += (Date.now() - task.startTime) / 1000 / 60;
+  task.startTime = Date.now();
+
+  await chrome.storage.local.set({
+    totalAET,
+    minutesWorked,
+    task,
+  });
+
+  chrome.runtime.sendMessage({ totalAET, minutesWorked });
 
   form.requestSubmit(button);
 }

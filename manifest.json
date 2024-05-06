@@ -26,5 +26,5 @@
       "matches": ["https://www.raterhub.com/evaluation/rater/task/show*"]
     }
   ],
-  "permissions": ["storage"]
+  "permissions": ["storage", "alarms"]
 }

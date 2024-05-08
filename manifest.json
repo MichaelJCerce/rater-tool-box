@@ -24,6 +24,13 @@
     {
       "js": ["./scripts/update-time.js"],
       "matches": ["https://www.raterhub.com/evaluation/rater/task/show*"]
+    },
+    {
+      "js": ["./scripts/reload.js"],
+      "matches": [
+        "https://www.raterhub.com/evaluation/rater",
+        "https://www.raterhub.com/evaluation/rater/task/index"
+      ]
     }
   ],
   "permissions": ["storage", "alarms"]

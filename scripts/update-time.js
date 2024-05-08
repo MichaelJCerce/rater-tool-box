@@ -31,6 +31,10 @@ async function calcTimeWorked(e) {
     "minutesWorked",
     "task",
   ]);
+  let message = "";
+  if (button === submitDoneButton) {
+    message = "redirect";
+  }
 
   if (!task.submitted) {
     totalAET += task.aet;
@@ -46,8 +50,7 @@ async function calcTimeWorked(e) {
     task,
   });
 
-  chrome.runtime.sendMessage({ totalAET, minutesWorked });
-
+  await chrome.runtime.sendMessage({ message, totalAET, minutesWorked });
   form.requestSubmit(button);
 }
 

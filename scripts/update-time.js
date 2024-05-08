@@ -33,7 +33,7 @@ async function calcTimeWorked(e) {
   ]);
   let message = "";
   if (button === submitDoneButton) {
-    message = "redirect";
+    message = "stopGrabTask";
   }
 
   if (!task.submitted) {

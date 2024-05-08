@@ -5,6 +5,7 @@ chrome.runtime.onInstalled.addListener(() => {
     task: {},
     prevWeek: {},
     currWeek: { totalAET: 0 },
+    settings: { active: true },
   });
 
   chrome.action.setBadgeText({
@@ -16,15 +17,19 @@ chrome.runtime.onInstalled.addListener(() => {
   });
 });
 
-chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
+chrome.runtime.onMessage.addListener(async function (
+  request,
+  sender,
+  sendResponse
+) {
   if (request.message == "reload") {
     chrome.tabs.reload(sender.tab.id);
     return;
   }
-  if (request.message == "redirect") {
-    chrome.tabs.update(sender.tab.id, {
-      url: "https://en.wikipedia.org/wiki/Main_Page",
-    });
+  if (request.message == "stopGrabTask") {
+    const { settings } = await chrome.storage.local.get("settings");
+    settings.active = false;
+    await chrome.storage.local.set({ settings });
   }
 
   roundedTime = (

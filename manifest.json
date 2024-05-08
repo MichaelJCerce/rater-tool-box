@@ -26,10 +26,12 @@
       "matches": ["https://www.raterhub.com/evaluation/rater/task/show*"]
     },
     {
-      "js": ["./scripts/reload.js"],
+      "js": ["./scripts/grab-task.js"],
       "matches": [
         "https://www.raterhub.com/evaluation/rater",
-        "https://www.raterhub.com/evaluation/rater/task/index"
+        "https://www.raterhub.com/evaluation/rater/",
+        "https://www.raterhub.com/evaluation/rater/task/index",
+        "https://www.raterhub.com/evaluation/rater/task/index/"
       ]
     }
   ],

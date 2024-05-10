@@ -1,19 +1,23 @@
 const timeDisplay = document.querySelector(".time");
-const resetButton = document.querySelector(".reset");
+const button = document.querySelector("button");
 
 async function getTime() {
-  const { minutesWorked } = await chrome.storage.local.get(["minutesWorked"]);
+  const { totalAET } = await chrome.storage.local.get("totalAET");
 
-  timeDisplay.textContent = `${minutesWorked} minutes worked`;
+  timeDisplay.textContent = `${(((totalAET * 1.09) / 6) * 0.1).toFixed(
+    1
+  )} hours`;
 }
 
-getTime();
-
-resetButton.addEventListener("click", async (e) => {
+button.addEventListener("click", async function (e) {
   e.preventDefault();
+  let queryOptions = { active: true, lastFocusedWindow: true };
+  let [tab] = await chrome.tabs.query(queryOptions);
 
-  await chrome.storage.local.set({ totalAET: 0, minutesWorked: 0, task: {} });
-
-  getTime();
-  chrome.runtime.sendMessage({ totalAET: 0, minutesWorked: 0 });
+  chrome.tabs.create({
+    url: "../calendar/calendar.html",
+    index: tab.index + 1,
+  });
 });
+
+getTime();

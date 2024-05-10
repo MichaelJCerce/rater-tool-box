@@ -4,25 +4,20 @@
   "version": "1.0",
   "description": "Automatically tracks the time spent on completed tasks throughout the work day.",
   "icons": {
-    "16": "./images/work_time_tracker_16.png",
-    "32": "./images/work_time_tracker_32.png",
-    "48": "./images/work_time_tracker_48.png",
-    "128": "./images/work_time_tracker_128.png"
+    "16": "./images/good_pace_16.png",
+    "32": "./images/good_pace_32.png",
+    "48": "./images/good_pace_48.png",
+    "128": "./images/good_pace_128.png"
   },
   "background": {
-    "service_worker": "background.js"
+    "service_worker": "./background.js"
   },
   "action": {
-    "default_icon": {
-      "16": "./images/work_time_tracker_16.png",
-      "24": "./images/work_time_tracker_24.png",
-      "32": "./images/work_time_tracker_32.png"
-    },
     "default_popup": "./popup/popup.html"
   },
   "content_scripts": [
     {
-      "js": ["./scripts/update-time.js"],
+      "js": ["./scripts/submit-task.js"],
       "matches": ["https://www.raterhub.com/evaluation/rater/task/show*"]
     },
     {

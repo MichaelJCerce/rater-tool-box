@@ -15,7 +15,7 @@ button.addEventListener("click", async function (e) {
   let [tab] = await chrome.tabs.query(queryOptions);
 
   chrome.tabs.create({
-    url: "../calendar/calendar.html",
+    url: "../pages/calendar/calendar.html",
     index: tab.index + 1,
   });
 });

@@ -1,34 +1,36 @@
 const calendar = document.querySelector(".calendar");
 const monthAndYear = document.querySelector(".month-year");
 const days = document.querySelector(".days");
-const nextMonthButton = document.querySelector(".next");
-const prevMonthButton = document.querySelector(".prev");
+const nextMonthButton = document.querySelector(".next-month");
+const prevMonthButton = document.querySelector(".prev-month");
+const currMonthButton = document.querySelector(".curr-month");
 
 let month = new Date().getMonth();
 let year = new Date().getFullYear();
-
 let monday = false;
-if (monday) {
-  for (let i = 1; i < 7; ++i) {
-    let currDay = days.children[i - 1].textContent;
-    days.children[i - 1].textContent = days.children[i].textContent;
-    days.children[i].textContent = currDay;
+
+async function initializeCalendar() {
+  const { settings } = await chrome.storage.local.get("settings");
+  if (settings.startMonday) {
+    for (let i = 1; i < 7; ++i) {
+      let currDay = days.children[i - 1].textContent;
+      days.children[i - 1].textContent = days.children[i].textContent;
+      days.children[i].textContent = currDay;
+    }
+    monday = true;
   }
+  drawCalendar(month, year);
 }
 
 async function drawCalendar(month, year) {
-  const message = "requestTime";
-  const { time, totalMinutesWorked } = await chrome.runtime.sendMessage({
+  const message = "getTime";
+  const { time, roundedTotalHoursWorked } = await chrome.runtime.sendMessage({
     message,
   });
 
   const currDate = new Date().getDate();
   const currMonth = new Date().getMonth();
   const currYear = new Date().getFullYear();
-
-  const roundedTotalHoursWorked = (
-    Math.ceil(Math.round(totalMinutesWorked) / 6) * 0.1
-  ).toFixed(1);
 
   const thisMonthMaxDays = new Date(year, month + 1, 0).getDate();
   const lastMonthMaxDays = new Date(year, month, 0).getDate();
@@ -97,43 +99,36 @@ async function drawCalendar(month, year) {
     let hours = 0;
 
     if (i < lastOffset) {
-      if (adjustedMonth === month) {
-        adjustedMonth = month - 1;
-      }
-
       adjustedDate = lastMonthMaxDays - dateAdjuster;
       dateAdjuster -= 1;
 
+      adjustedMonth = month - 1;
       if (adjustedMonth == -1) {
         adjustedMonth = 11;
         adjustedYear -= 1;
       }
+
       day.classList.add("past");
     } else if (i < lastOffset + thisMonthMaxDays) {
-      if (adjustedMonth !== month) {
-        adjustedMonth = month;
-      }
-
       dateAdjuster += 1;
       adjustedDate = dateAdjuster + 1;
     } else {
-      if (adjustedMonth === month) {
-        adjustedMonth += 1;
-        dateAdjuster = nextOffset;
-      }
+      adjustedDate = i + 1 - (thisMonthMaxDays + lastOffset);
 
-      adjustedDate =
-        i + dateAdjuster + 1 - (thisMonthMaxDays + lastOffset + nextOffset);
-
+      adjustedMonth += 1;
       if (adjustedMonth === 12) {
         adjustedMonth = 0;
         adjustedYear += 1;
       }
+
       day.classList.add("future");
     }
 
     if (time[adjustedYear]) {
       hours = time[adjustedYear][adjustedMonth][adjustedDate - 1];
+      if (hours > 0) {
+        day.classList.add("worked");
+      }
     }
 
     if (
@@ -142,11 +137,11 @@ async function drawCalendar(month, year) {
       adjustedYear === currYear
     ) {
       day.classList.add("current");
-      hours = isNaN(+roundedTotalHoursWorked) ? hours : roundedTotalHoursWorked;
+      hours = +roundedTotalHoursWorked;
     }
 
     h3.textContent = adjustedDate;
-    h4.textContent = `${hours} hours`;
+    h4.textContent = `${hours.toFixed(1)} hours`;
     day.classList.add("day");
 
     day.appendChild(h3);
@@ -191,4 +186,13 @@ prevMonthButton.addEventListener("click", function (e) {
   drawCalendar(month, year);
 });
 
-drawCalendar(month, year);
+currMonthButton.addEventListener("click", function (e) {
+  e.preventDefault();
+  month = new Date().getMonth();
+  year = new Date().getFullYear();
+  destroyCalendar();
+
+  drawCalendar(month, year);
+});
+
+initializeCalendar();

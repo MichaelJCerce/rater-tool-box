@@ -3,19 +3,21 @@ function requestReload() {
   chrome.runtime.sendMessage({ message });
 }
 
-async function grabTask() {
+async function autoGrabTask() {
   const { settings } = await chrome.storage.local.get("settings");
-  const task = document.querySelector(".ewok-rater-task-option a");
-  const intervalKey = setInterval(requestReload, 10000);
+  if (settings.autoGrab) {
+    const task = document.querySelector(".ewok-rater-task-option a");
+    const intervalKey = setInterval(requestReload, 10000);
 
-  if (task && settings.active) {
-    task.click();
-  } else if (!settings.active) {
-    clearInterval(intervalKey);
+    if (task && settings.tempAutoGrab) {
+      task.click();
+    } else if (!settings.tempAutoGrab) {
+      clearInterval(intervalKey);
 
-    const message = "activateGrabTask";
-    chrome.runtime.sendMessage({ message, settings });
+      const message = "activateTempAutoGrab";
+      chrome.runtime.sendMessage({ message, settings });
+    }
   }
 }
 
-grabTask();
+autoGrabTask();

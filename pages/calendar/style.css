@@ -74,6 +74,10 @@ button {
   background-color: plum;
 }
 
+.pay {
+  background-color: lightcoral;
+}
+
 .past,
 .future {
   background-color: lightblue;

@@ -1,4 +1,9 @@
 chrome.runtime.onInstalled.addListener(() => {
+  const payday = new Date();
+  payday.setHours(0, 0, 0, 0);
+  payday.setDate(10);
+  payday.setMonth(4);
+  payday.setFullYear(2024);
   const time = {
     addYear(year) {
       this[year] = new Array(12);
@@ -10,6 +15,7 @@ chrome.runtime.onInstalled.addListener(() => {
         }
       }
     },
+    payday: payday.toJSON(),
   };
   time.addYear(new Date().getFullYear());
   chrome.storage.local.set({

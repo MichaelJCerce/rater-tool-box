@@ -28,6 +28,8 @@ async function drawCalendar(month, year) {
     message,
   });
 
+  const payday = new Date(time.payday);
+
   const currDate = new Date().getDate();
   const currMonth = new Date().getMonth();
   const currYear = new Date().getFullYear();
@@ -129,6 +131,13 @@ async function drawCalendar(month, year) {
       if (hours > 0) {
         day.classList.add("worked");
       }
+    }
+    const testPayday = new Date(adjustedYear, adjustedMonth, adjustedDate);
+    if (
+      Math.round(Math.abs(testPayday - payday) / 1000 / 60 / 60 / 24) % 14 ===
+      0
+    ) {
+      day.classList.add("pay");
     }
 
     if (

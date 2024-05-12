@@ -7,28 +7,28 @@ body {
 }
 
 .calendar {
+  min-height: calc(100vh - 10px);
   padding-bottom: 10px;
   display: grid;
+  grid-template-rows: auto 1fr auto;
   gap: 10px;
   justify-content: center;
-  min-height: calc(100vh - 10px);
-  grid-template-rows: auto 1fr auto;
 }
 
 .days {
+  margin-bottom: 10px;
   display: grid;
   grid-template-columns: repeat(7, minmax(135px, 200px));
   grid-template-rows: min-content;
   gap: 10px;
-  margin-bottom: 10px;
 }
 
 .day {
   border: 1px solid black;
   border-radius: 8px;
-  background-color: white;
   display: grid;
   grid-template-rows: auto 1fr;
+  background-color: white;
 }
 
 h1,
@@ -36,57 +36,52 @@ h2 {
   margin: 0;
 }
 
-h2 {
-  align-self: end;
-}
-
 h3 {
+  padding-right: 5px;
   margin: 0;
   justify-self: end;
-  padding-right: 5px;
 }
 
 h4 {
-  color: transparent;
-  margin: 0;
   padding-bottom: 25px;
+  margin: 0;
+  color: transparent;
 }
 
 button {
-  font-family: inherit;
+  padding: 8px 16px;
   border: none;
   border-radius: 4px;
   background-color: white;
-  padding: 8px 16px;
-
+  font-family: inherit;
   font-weight: bold;
   cursor: pointer;
 }
-
-.current h4,
-.worked h4 {
-  color: black;
-  justify-self: center;
-  align-self: center;
-}
-
-.current {
-  background-color: plum;
-}
-
 .past,
 .future {
   background-color: lightblue;
 }
 
+.current {
+  background-color: darksalmon;
+}
+
+.current h4,
+.worked h4 {
+  justify-self: center;
+  align-self: center;
+  color: black;
+}
+
 .pay {
-  background-color: lightcoral;
+  background-color: plum;
 }
 
 .actions {
   display: flex;
   gap: 10px;
 }
+
 .curr-month {
   margin-left: auto;
 }

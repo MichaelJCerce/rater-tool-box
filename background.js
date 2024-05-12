@@ -156,19 +156,19 @@ function isGoodPace(roundedTotalHoursWorked, totalAET) {
 }
 
 function calcRoundedTotalHoursWorked(totalMinutesWorked, totalAET) {
-  const roundedTotalHoursWorked = (
-    Math.ceil(Math.round(totalMinutesWorked) / 6) * 0.1
-  ).toFixed(1);
+  let multiplier = 1.09;
+  let roundedTotalHoursWorked;
+  for (let i = 9; i > -1; --i) {
+    roundedTotalHoursWorked = (
+      Math.ceil(Math.round(totalMinutesWorked * multiplier) / 6) * 0.1
+    ).toFixed(1);
+    if (isGoodPace(roundedTotalHoursWorked, totalAET)) {
+      break;
+    }
 
-  const roundedTotalAETHours = (
-    Math.ceil(Math.round(totalAET * 1.09) / 6) * 0.1
-  ).toFixed(1);
-
-  if (isGoodPace(roundedTotalHoursWorked, totalAET)) {
-    return roundedTotalHoursWorked;
+    multiplier -= 0.01;
   }
-
-  return roundedTotalAETHours;
+  return roundedTotalHoursWorked;
 }
 
 function setIconAndBadge(roundedTotalHoursWorked, totalAET) {

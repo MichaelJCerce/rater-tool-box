@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "Work Time Tracker",
-  "version": "1.0",
-  "description": "Automatically tracks the time spent on completed tasks throughout the work day.",
+  "name": "Rater Tool Box",
+  "version": "2.0",
+  "description": "Provides helpful features for Search Quality Raters.",
   "icons": {
     "16": "./images/good_pace_16.png",
     "32": "./images/good_pace_32.png",

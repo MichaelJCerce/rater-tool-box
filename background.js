@@ -42,6 +42,18 @@ chrome.runtime.onInstalled.addListener(() => {
   });
 });
 
+chrome.runtime.onStartup.addListener(async function () {
+  const { totalAET, totalMinutesWorked } = await chrome.storage.local.get([
+    "totalAET",
+    "totalMinutesWorked",
+  ]);
+  const roundedTotalHoursWorked = calcRoundedTotalHoursWorked(
+    totalMinutesWorked,
+    totalAET
+  );
+  setIconAndBadge(roundedTotalHoursWorked, totalAET);
+});
+
 chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
   if (request.message === "submitTask") {
     const { settings, task, button } = request;

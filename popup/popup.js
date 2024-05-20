@@ -7,10 +7,16 @@ calendarButton.addEventListener("click", async function (e) {
   let queryOptions = { active: true, lastFocusedWindow: true };
   let [tab] = await chrome.tabs.query(queryOptions);
 
-  chrome.tabs.create({
-    url: "../pages/calendar/calendar.html",
-    index: tab.index + 1,
-  });
+  if (tab) {
+    chrome.tabs.create({
+      url: "../pages/calendar/calendar.html",
+      index: tab.index + 1,
+    });
+  } else {
+    chrome.tabs.create({
+      url: "../pages/calendar/calendar.html",
+    });
+  }
 });
 
 reportTimeButton.addEventListener("click", async function (e) {
@@ -18,10 +24,16 @@ reportTimeButton.addEventListener("click", async function (e) {
   let queryOptions = { active: true, lastFocusedWindow: true };
   let [tab] = await chrome.tabs.query(queryOptions);
 
-  chrome.tabs.create({
-    url: "https://myapps.microsoft.com/welocalize",
-    index: tab.index + 1,
-  });
+  if (tab) {
+    chrome.tabs.create({
+      url: "https://myapps.microsoft.com/welocalize",
+      index: tab.index + 1,
+    });
+  } else {
+    chrome.tabs.create({
+      url: "https://myapps.microsoft.com/welocalize",
+    });
+  }
 });
 
 settingsButton.addEventListener("click", async function (e) {
@@ -51,6 +63,15 @@ settingsButton.addEventListener("click", async function (e) {
   autoSubmitLabel.setAttribute("for", "auto-submit");
   autoSubmitLabel.textContent = "auto submit";
 
+  const openResultsLi = document.createElement("li");
+  const openResultsDiv = document.createElement("div");
+  const openResults = document.createElement("input");
+  openResults.setAttribute("type", "checkbox");
+  openResults.setAttribute("id", "open-results");
+  const openResultsLabel = document.createElement("label");
+  openResultsLabel.setAttribute("for", "open-results");
+  openResultsLabel.textContent = "open results";
+
   const startMondayLi = document.createElement("li");
   const startMondayDiv = document.createElement("div");
   const startMonday = document.createElement("input");
@@ -60,32 +81,15 @@ settingsButton.addEventListener("click", async function (e) {
   startMondayLabel.setAttribute("for", "start-monday");
   startMondayLabel.textContent = "start monday";
 
-  const saveButtonLi = document.createElement("li");
-  const saveButton = document.createElement("button");
-  saveButton.textContent = "save settings";
-
-  autoGrabDiv.appendChild(autoGrab);
-  autoGrabDiv.appendChild(autoGrabLabel);
-
-  autoSubmitDiv.appendChild(autoSubmit);
-  autoSubmitDiv.appendChild(autoSubmitLabel);
-
-  startMondayDiv.appendChild(startMonday);
-  startMondayDiv.appendChild(startMondayLabel);
-
-  autoGrabLi.appendChild(autoGrabDiv);
-  autoSubmitLi.appendChild(autoSubmitDiv);
-  startMondayLi.appendChild(startMondayDiv);
-  saveButtonLi.appendChild(saveButton);
-  ul.appendChild(autoGrabLi);
-  ul.appendChild(autoSubmitLi);
-  ul.appendChild(startMondayLi);
-  ul.appendChild(saveButtonLi);
-
   const { settings } = await chrome.storage.local.get("settings");
   autoGrab.checked = settings.autoGrab ? true : false;
   autoSubmit.checked = settings.autoSubmit ? true : false;
+  openResults.checked = settings.openResults ? true : false;
   startMonday.checked = settings.startMonday ? true : false;
+
+  const saveButtonLi = document.createElement("li");
+  const saveButton = document.createElement("button");
+  saveButton.textContent = "save settings";
 
   saveButton.addEventListener("click", function (e) {
     e.preventDefault();
@@ -94,15 +98,43 @@ settingsButton.addEventListener("click", async function (e) {
     const newSettings = {
       autoGrab: autoGrab.checked ? true : false,
       autoSubmit: autoSubmit.checked ? true : false,
+      openResults: openResults.checked ? true : false,
       startMonday: startMonday.checked ? true : false,
       tempAutoGrab: true,
     };
+
     while (ul.children.length) {
       ul.removeChild(ul.lastElementChild);
     }
+
     while (save.length) {
       ul.appendChild(save.pop());
     }
+
     chrome.runtime.sendMessage({ message, newSettings });
   });
+
+  autoGrabDiv.appendChild(autoGrab);
+  autoGrabDiv.appendChild(autoGrabLabel);
+
+  autoSubmitDiv.appendChild(autoSubmit);
+  autoSubmitDiv.appendChild(autoSubmitLabel);
+
+  openResultsDiv.appendChild(openResults);
+  openResultsDiv.appendChild(openResultsLabel);
+
+  startMondayDiv.appendChild(startMonday);
+  startMondayDiv.appendChild(startMondayLabel);
+
+  autoGrabLi.appendChild(autoGrabDiv);
+  autoSubmitLi.appendChild(autoSubmitDiv);
+  openResultsLi.appendChild(openResultsDiv);
+  startMondayLi.appendChild(startMondayDiv);
+  saveButtonLi.appendChild(saveButton);
+
+  ul.appendChild(autoGrabLi);
+  ul.appendChild(autoSubmitLi);
+  ul.appendChild(openResultsLi);
+  ul.appendChild(startMondayLi);
+  ul.appendChild(saveButtonLi);
 });

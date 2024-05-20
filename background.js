@@ -30,10 +30,12 @@ chrome.runtime.onInstalled.addListener(async (details) => {
     });
   }
 
+  checkAlarm();
   setIconAndBadgeText();
 });
 
 chrome.runtime.onStartup.addListener(function () {
+  checkAlarm();
   setIconAndBadgeText();
 });
 
@@ -199,4 +201,35 @@ async function setIconAndBadgeText() {
   chrome.action.setBadgeText({
     text: roundedTotalHoursWorked,
   });
+}
+
+async function checkAlarm() {
+  const alarms = await chrome.alarms.getAll();
+
+  if (!alarms.length) {
+    const { task } = await chrome.storage.local.get("task");
+
+    if (Object.keys(task).length) {
+      const today = new Date();
+      const taskDate = new Date(task.startTime).getDate();
+      const taskMonth = new Date(task.startTime).getMonth();
+      const taskYear = new Date(task.startTime).getFullYear();
+
+      if (
+        today.getDate() != taskDate ||
+        today.getMonth() != taskMonth ||
+        today.getFullYear() != taskYear
+      ) {
+        chrome.alarms.create("updateTime", { when: Date.now() });
+      }
+    }
+
+    const midnight = new Date();
+    midnight.setHours(0, 0, 0, 0);
+    midnight.setDate(midnight.getDate() + 1);
+    chrome.alarms.create("updateTime", {
+      when: midnight.getTime(),
+      periodInMinutes: 60 * 24,
+    });
+  }
 }

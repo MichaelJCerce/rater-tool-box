@@ -182,17 +182,17 @@ async function setIconAndBadgeText() {
   if (isGoodPace(roundedTotalHoursWorked, totalAET)) {
     chrome.action.setIcon({
       path: {
-        16: "./images/good_pace_16.png",
-        24: "./images/good_pace_24.png",
-        32: "./images/good_pace_32.png",
+        16: "../assets/images/good_pace_16.png",
+        24: "../assets/images/good_pace_24.png",
+        32: "../assets/images/good_pace_32.png",
       },
     });
   } else {
     chrome.action.setIcon({
       path: {
-        16: "./images/slow_pace_16.png",
-        24: "./images/slow_pace_24.png",
-        32: "./images/slow_pace_32.png",
+        16: "../assets/images/slow_pace_16.png",
+        24: "../assets/images/slow_pace_24.png",
+        32: "../assets/images/slow_pace_32.png",
       },
     });
   }

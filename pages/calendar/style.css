@@ -57,12 +57,13 @@ button {
   font-weight: bold;
   cursor: pointer;
 }
+
 .past,
 .future {
   background-color: lightblue;
 }
 
-.current {
+.current.day {
   background-color: darksalmon;
 }
 

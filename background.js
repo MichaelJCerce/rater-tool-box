@@ -1,57 +1,40 @@
-chrome.runtime.onInstalled.addListener(() => {
-  const payday = new Date();
-  payday.setHours(0, 0, 0, 0);
-  payday.setDate(10);
-  payday.setMonth(4);
-  payday.setFullYear(2024);
-  const time = {
-    addYear(year) {
-      this[year] = new Array(12);
-      for (let i = 0; i < 12; ++i) {
-        const numDays = new Date(year, (i + 1) % 12, 0).getDate();
-        this[year][i] = new Array(numDays);
-        for (let j = 0; j < numDays; ++j) {
-          this[year][i][j] = 0;
+chrome.runtime.onInstalled.addListener(async (details) => {
+  if (details.reason === chrome.runtime.OnInstalledReason.INSTALL) {
+    const time = {
+      addYear(year) {
+        this[year] = new Array(12);
+        for (let i = 0; i < 12; ++i) {
+          const numDays = new Date(year, (i + 1) % 12, 0).getDate();
+          this[year][i] = new Array(numDays);
+          for (let j = 0; j < numDays; ++j) {
+            this[year][i][j] = 0;
+          }
         }
-      }
-    },
-    payday: payday.toJSON(),
-  };
-  time.addYear(new Date().getFullYear());
-  chrome.storage.local.set({
-    settings: {
-      autoGrab: true,
-      autoSubmit: true,
-      startMonday: false,
-      tempAutoGrab: true,
-    },
-    task: {},
-    time,
-    totalAET: 0,
-    totalMinutesWorked: 0,
-  });
+      },
+      payday: "2024-05-10T04:00:00.000Z",
+    };
+    time.addYear(new Date().getFullYear());
 
-  setIconAndBadge("0.0", 0);
+    await chrome.storage.local.set({
+      settings: {
+        autoGrab: true,
+        autoSubmit: true,
+        openResults: true,
+        startMonday: false,
+        tempAutoGrab: true,
+      },
+      task: {},
+      time,
+      totalAET: 0,
+      totalMinutesWorked: 0,
+    });
+  }
 
-  const midnight = new Date();
-  midnight.setHours(0, 0, 0, 0);
-  midnight.setDate(midnight.getDate() + 1);
-  chrome.alarms.create("updateTime", {
-    when: midnight.getTime(),
-    periodInMinutes: 60 * 24,
-  });
+  setIconAndBadgeText();
 });
 
-chrome.runtime.onStartup.addListener(async function () {
-  const { totalAET, totalMinutesWorked } = await chrome.storage.local.get([
-    "totalAET",
-    "totalMinutesWorked",
-  ]);
-  const roundedTotalHoursWorked = calcRoundedTotalHoursWorked(
-    totalMinutesWorked,
-    totalAET
-  );
-  setIconAndBadge(roundedTotalHoursWorked, totalAET);
+chrome.runtime.onStartup.addListener(function () {
+  setIconAndBadgeText();
 });
 
 chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
@@ -73,18 +56,15 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
     task.startTime = Date.now();
     totalMinutesWorked += minutesOnTask;
 
-    chrome.storage.local.set({
-      task,
-      totalAET,
-      totalMinutesWorked,
-    });
+    (async () => {
+      await chrome.storage.local.set({
+        task,
+        totalAET,
+        totalMinutesWorked,
+      });
 
-    const roundedTotalHoursWorked = calcRoundedTotalHoursWorked(
-      totalMinutesWorked,
-      totalAET
-    );
-
-    setIconAndBadge(roundedTotalHoursWorked, totalAET);
+      setIconAndBadgeText();
+    })();
   } else if (request.message === "updateTask") {
     const { task, currentTask } = request;
 
@@ -93,6 +73,7 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
     }
   } else if (request.message === "activateTempAutoGrab") {
     const { settings } = request;
+
     settings.tempAutoGrab = true;
     chrome.storage.local.set({ settings });
   } else if (request.message === "getTime") {
@@ -115,6 +96,7 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
     return true;
   } else if (request.message === "updateSettings") {
     const { newSettings } = request;
+
     chrome.storage.local.set({ settings: newSettings });
   } else if (request.message === "reload") {
     chrome.tabs.reload(sender.tab.id);
@@ -146,14 +128,14 @@ chrome.alarms.onAlarm.addListener(async () => {
 
     time[taskYear][taskMonth][taskDate - 1] = +roundedTotalHoursWorked;
 
-    chrome.storage.local.set({
+    await chrome.storage.local.set({
       task: {},
       time,
       totalAET: 0,
       totalMinutesWorked: 0,
     });
 
-    setIconAndBadge("0.0", 0);
+    setIconAndBadgeText();
   }
 });
 
@@ -170,6 +152,7 @@ function isGoodPace(roundedTotalHoursWorked, totalAET) {
 function calcRoundedTotalHoursWorked(totalMinutesWorked, totalAET) {
   let multiplier = 1.09;
   let roundedTotalHoursWorked;
+
   for (let i = 9; i > -1; --i) {
     roundedTotalHoursWorked = (
       Math.ceil(Math.round(totalMinutesWorked * multiplier) / 6) * 0.1
@@ -177,13 +160,23 @@ function calcRoundedTotalHoursWorked(totalMinutesWorked, totalAET) {
     if (isGoodPace(roundedTotalHoursWorked, totalAET)) {
       break;
     }
-
     multiplier -= 0.01;
   }
+
   return roundedTotalHoursWorked;
 }
 
-function setIconAndBadge(roundedTotalHoursWorked, totalAET) {
+async function setIconAndBadgeText() {
+  const { totalAET, totalMinutesWorked } = await chrome.storage.local.get([
+    "totalAET",
+    "totalMinutesWorked",
+  ]);
+
+  const roundedTotalHoursWorked = calcRoundedTotalHoursWorked(
+    totalMinutesWorked,
+    totalAET
+  );
+
   if (isGoodPace(roundedTotalHoursWorked, totalAET)) {
     chrome.action.setIcon({
       path: {
@@ -202,6 +195,7 @@ function setIconAndBadge(roundedTotalHoursWorked, totalAET) {
     });
   }
 
+  chrome.action.setBadgeBackgroundColor({ color: "#92B3F4" });
   chrome.action.setBadgeText({
     text: roundedTotalHoursWorked,
   });

@@ -34,8 +34,6 @@ async function submitTask(e) {
       "totalAET",
       "totalMinutesWorked",
     ]);
-  const button =
-    e.target.id === submitButton.id ? submitButton : submitDoneButton;
 
   await chrome.runtime.sendMessage({
     message,
@@ -43,10 +41,10 @@ async function submitTask(e) {
     task,
     totalAET,
     totalMinutesWorked,
-    button: button.id,
+    button: this.id,
   });
 
-  form.requestSubmit(button);
+  form.requestSubmit(this);
 }
 
 async function autoSubmitTask() {
@@ -58,8 +56,9 @@ async function autoSubmitTask() {
     }, aet * 60 * 1000);
   }
 }
-updateCurrentTask();
-autoSubmitTask();
 
 submitButton.addEventListener("click", submitTask);
 submitDoneButton.addEventListener("click", submitTask);
+
+updateCurrentTask();
+autoSubmitTask();

@@ -178,7 +178,7 @@ async function setIconAndBadgeText() {
     "totalMinutesWorked",
   ]);
 
-  const roundedTotalHoursWorked = calcRoundedTotalHoursWorked(
+  let roundedTotalHoursWorked = calcRoundedTotalHoursWorked(
     totalMinutesWorked,
     totalAET
   );
@@ -199,6 +199,10 @@ async function setIconAndBadgeText() {
         32: "../assets/images/slow_pace_32.png",
       },
     });
+  }
+
+  if (Number(roundedTotalHoursWorked) > 8) {
+    roundedTotalHoursWorked = "8.0"
   }
 
   chrome.action.setBadgeBackgroundColor({ color: "#92B3F4" });

@@ -132,13 +132,6 @@ async function drawCalendar(month, year) {
         day.classList.add("worked");
       }
     }
-    const testPayday = new Date(adjustedYear, adjustedMonth, adjustedDate);
-    if (
-      Math.round(Math.abs(testPayday - payday) / 1000 / 60 / 60 / 24) % 14 ===
-      0
-    ) {
-      day.classList.add("pay");
-    }
 
     if (
       adjustedDate === currDate &&
@@ -147,6 +140,19 @@ async function drawCalendar(month, year) {
     ) {
       day.classList.add("current");
       hours = +roundedTotalHoursWorked;
+    }
+
+    if (hours > 8) {
+      hours = 8;
+    }
+
+    const potentialPayDay = new Date(adjustedYear, adjustedMonth, adjustedDate);
+    if (
+      Math.round(Math.abs(potentialPayDay - payday) / 1000 / 60 / 60 / 24) %
+        14 ===
+      0
+    ) {
+      day.classList.add("pay");
     }
 
     h3.textContent = adjustedDate;

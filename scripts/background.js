@@ -241,7 +241,7 @@ async function checkAlarm() {
 async function checkOffscreen() {
   const existingOffscreen = await chrome.runtime.getContexts({
     contextTypes: ["OFFSCREEN_DOCUMENT"],
-    documentUrls: [chrome.runtime.getURL("../pages/offscreen/offscreen.html")],
+    documentUrls: [chrome.runtime.getURL("pages/offscreen/offscreen.html")],
   });
 
   if (!existingOffscreen.length) {

@@ -17,7 +17,11 @@
   },
   "content_scripts": [
     {
-      "js": ["./scripts/open-results.js", "./scripts/submit-task.js"],
+      "js": [
+        "./scripts/update-task.js",
+        "./scripts/open-results.js",
+        "./scripts/submit-task.js"
+      ],
       "matches": ["https://www.raterhub.com/evaluation/rater/task/show*"]
     },
     {

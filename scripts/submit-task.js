@@ -4,27 +4,9 @@ const submitDoneButton = document.querySelector(
   "#ewok-task-submit-done-button"
 );
 
-const url = window.location.href;
 const aet = +document
   .querySelector(".ewok-estimated-task-weight")
   .textContent.split(" ")[2];
-
-async function updateCurrentTask() {
-  const message = "updateTask";
-  const { settings, task } = await chrome.storage.local.get([
-    "settings",
-    "task",
-  ]);
-
-  const currentTask = {
-    id: url.substring(url.indexOf("=") + 1),
-    startTime: Date.now(),
-    aet,
-    submitted: false,
-  };
-
-  chrome.runtime.sendMessage({ message, settings, task, currentTask });
-}
 
 async function submitTask(e) {
   e.preventDefault();
@@ -63,5 +45,4 @@ async function autoSubmitTask() {
 submitButton.addEventListener("click", submitTask);
 submitDoneButton.addEventListener("click", submitTask);
 
-updateCurrentTask();
 autoSubmitTask();

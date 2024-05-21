@@ -20,6 +20,7 @@ chrome.runtime.onInstalled.addListener(async (details) => {
         autoGrab: true,
         autoSubmit: true,
         openResults: true,
+        playAudio: true,
         startMonday: false,
         tempAutoGrab: true,
       },
@@ -68,9 +69,12 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
       setIconAndBadgeText();
     })();
   } else if (request.message === "updateTask") {
-    const { task, currentTask } = request;
+    const { settings, task, currentTask } = request;
 
     if (task.id !== currentTask.id) {
+      if (settings.playAudio) {
+        playAlert();
+      }
       chrome.storage.local.set({ task: currentTask });
     }
   } else if (request.message === "activateTempAutoGrab") {
@@ -232,4 +236,26 @@ async function checkAlarm() {
       periodInMinutes: 60 * 24,
     });
   }
+}
+
+async function checkOffscreen() {
+  const existingOffscreen = await chrome.runtime.getContexts({
+    contextTypes: ["OFFSCREEN_DOCUMENT"],
+    documentUrls: [chrome.runtime.getURL("../pages/offscreen/offscreen.html")],
+  });
+
+  if (!existingOffscreen.length) {
+    await chrome.offscreen.createDocument({
+      url: "../pages/offscreen/offscreen.html",
+      reasons: ["AUDIO_PLAYBACK"],
+      justification: "alert rater of newly grabbed task",
+    });
+  }
+}
+
+async function playAlert() {
+  const message = "alertRater";
+
+  await checkOffscreen();
+  chrome.runtime.sendMessage({ message });
 }

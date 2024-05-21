@@ -11,7 +11,10 @@ const aet = +document
 
 async function updateCurrentTask() {
   const message = "updateTask";
-  const { task } = await chrome.storage.local.get("task");
+  const { settings, task } = await chrome.storage.local.get([
+    "settings",
+    "task",
+  ]);
 
   const currentTask = {
     id: url.substring(url.indexOf("=") + 1),
@@ -20,7 +23,7 @@ async function updateCurrentTask() {
     submitted: false,
   };
 
-  chrome.runtime.sendMessage({ message, task, currentTask });
+  chrome.runtime.sendMessage({ message, settings, task, currentTask });
 }
 
 async function submitTask(e) {

@@ -72,6 +72,15 @@ settingsButton.addEventListener("click", async function (e) {
   openResultsLabel.setAttribute("for", "open-results");
   openResultsLabel.textContent = "open results";
 
+  const playAudioLi = document.createElement("li");
+  const playAudioDiv = document.createElement("div");
+  const playAudio = document.createElement("input");
+  playAudio.setAttribute("type", "checkbox");
+  playAudio.setAttribute("id", "play-audio");
+  const playAudioLabel = document.createElement("label");
+  playAudioLabel.setAttribute("for", "play-audio");
+  playAudioLabel.textContent = "play audio";
+
   const startMondayLi = document.createElement("li");
   const startMondayDiv = document.createElement("div");
   const startMonday = document.createElement("input");
@@ -85,6 +94,7 @@ settingsButton.addEventListener("click", async function (e) {
   autoGrab.checked = settings.autoGrab ? true : false;
   autoSubmit.checked = settings.autoSubmit ? true : false;
   openResults.checked = settings.openResults ? true : false;
+  playAudio.checked = settings.playAudio ? true : false;
   startMonday.checked = settings.startMonday ? true : false;
 
   const saveButtonLi = document.createElement("li");
@@ -99,6 +109,7 @@ settingsButton.addEventListener("click", async function (e) {
       autoGrab: autoGrab.checked ? true : false,
       autoSubmit: autoSubmit.checked ? true : false,
       openResults: openResults.checked ? true : false,
+      playAudio: playAudio.checked ? true : false,
       startMonday: startMonday.checked ? true : false,
       tempAutoGrab: true,
     };
@@ -122,6 +133,8 @@ settingsButton.addEventListener("click", async function (e) {
 
   openResultsDiv.appendChild(openResults);
   openResultsDiv.appendChild(openResultsLabel);
+  playAudioDiv.appendChild(playAudio);
+  playAudioDiv.appendChild(playAudioLabel);
 
   startMondayDiv.appendChild(startMonday);
   startMondayDiv.appendChild(startMondayLabel);
@@ -129,12 +142,14 @@ settingsButton.addEventListener("click", async function (e) {
   autoGrabLi.appendChild(autoGrabDiv);
   autoSubmitLi.appendChild(autoSubmitDiv);
   openResultsLi.appendChild(openResultsDiv);
+  playAudioLi.appendChild(playAudioDiv);
   startMondayLi.appendChild(startMondayDiv);
   saveButtonLi.appendChild(saveButton);
 
   ul.appendChild(autoGrabLi);
   ul.appendChild(autoSubmitLi);
   ul.appendChild(openResultsLi);
+  ul.appendChild(playAudioLi);
   ul.appendChild(startMondayLi);
   ul.appendChild(saveButtonLi);
 });

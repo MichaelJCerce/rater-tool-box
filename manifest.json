@@ -17,7 +17,7 @@
   },
   "content_scripts": [
     {
-      "js": ["./scripts/submit-task.js", "./scripts/open-results.js"],
+      "js": ["./scripts/open-results.js", "./scripts/submit-task.js"],
       "matches": ["https://www.raterhub.com/evaluation/rater/task/show*"]
     },
     {
@@ -30,5 +30,5 @@
       ]
     }
   ],
-  "permissions": ["alarms", "storage"]
+  "permissions": ["alarms", "offscreen", "storage"]
 }

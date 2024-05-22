@@ -1,20 +1,5 @@
 chrome.runtime.onInstalled.addListener(async (details) => {
   if (details.reason === chrome.runtime.OnInstalledReason.INSTALL) {
-    const time = {
-      addYear(year) {
-        this[year] = new Array(12);
-        for (let i = 0; i < 12; ++i) {
-          const numDays = new Date(year, (i + 1) % 12, 0).getDate();
-          this[year][i] = new Array(numDays);
-          for (let j = 0; j < numDays; ++j) {
-            this[year][i][j] = 0;
-          }
-        }
-      },
-      payday: "2024-05-10T04:00:00.000Z",
-    };
-    time.addYear(new Date().getFullYear());
-
     await chrome.storage.local.set({
       settings: {
         autoGrab: true,
@@ -25,7 +10,7 @@ chrome.runtime.onInstalled.addListener(async (details) => {
         tempAutoGrab: true,
       },
       task: {},
-      time,
+      time: createTime(),
       totalAET: 0,
       totalMinutesWorked: 0,
     });
@@ -50,14 +35,17 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
       chrome.storage.local.set({ settings });
     }
 
+    if (!Object.keys(task).length) {
+      return;
+    }
+
     if (!task.submitted) {
       totalAET += task.aet;
       task.submitted = true;
     }
 
-    const minutesOnTask = (Date.now() - task.startTime) / 1000 / 60;
+    totalMinutesWorked += (Date.now() - task.startTime) / 1000 / 60;
     task.startTime = Date.now();
-    totalMinutesWorked += minutesOnTask;
 
     (async () => {
       await chrome.storage.local.set({
@@ -119,31 +107,56 @@ chrome.alarms.onAlarm.addListener(async () => {
     ]);
 
   if (Object.keys(task).length) {
+    const today = new Date();
     const taskDate = new Date(task.startTime).getDate();
     const taskMonth = new Date(task.startTime).getMonth();
     const taskYear = new Date(task.startTime).getFullYear();
 
-    const roundedTotalHoursWorked = calcRoundedTotalHoursWorked(
-      totalMinutesWorked,
-      totalAET
-    );
+    if (
+      today.getDate() !== taskDate ||
+      today.getMonth() !== taskMonth ||
+      today.getFullYear() !== taskYear
+    ) {
+      const roundedTotalHoursWorked = Number(
+        calcRoundedTotalHoursWorked(totalMinutesWorked, totalAET)
+      );
 
-    if (!time[taskYear]) {
-      time.addYear(taskYear);
+      if (!time[taskYear]) {
+        time.addYear(taskYear);
+      }
+
+      time[taskYear][taskMonth][taskDate - 1] += roundedTotalHoursWorked;
+
+      await chrome.storage.local.set({
+        task: task.submitted ? {} : task,
+        time,
+        totalAET: 0,
+        totalMinutesWorked: 0,
+      });
+
+      setIconAndBadgeText();
     }
-
-    time[taskYear][taskMonth][taskDate - 1] = +roundedTotalHoursWorked;
-
-    await chrome.storage.local.set({
-      task: {},
-      time,
-      totalAET: 0,
-      totalMinutesWorked: 0,
-    });
-
-    setIconAndBadgeText();
   }
 });
+
+function createTime() {
+  const time = {
+    addYear(year) {
+      this[year] = new Array(12);
+      for (let i = 0; i < 12; ++i) {
+        const numDays = new Date(year, (i + 1) % 12, 0).getDate();
+        this[year][i] = new Array(numDays);
+        for (let j = 0; j < numDays; ++j) {
+          this[year][i][j] = 0;
+        }
+      }
+    },
+    payday: "2024-05-10T04:00:00.000Z",
+  };
+  time.addYear(new Date().getFullYear());
+
+  return time;
+}
 
 function isGoodPace(roundedTotalHoursWorked, totalAET) {
   const roundedTotalMinutesWorkedRatio =
@@ -202,7 +215,7 @@ async function setIconAndBadgeText() {
   }
 
   if (Number(roundedTotalHoursWorked) > 8) {
-    roundedTotalHoursWorked = "8.0"
+    roundedTotalHoursWorked = "8.0";
   }
 
   chrome.action.setBadgeBackgroundColor({ color: "#92B3F4" });
@@ -212,29 +225,14 @@ async function setIconAndBadgeText() {
 }
 
 async function checkAlarm() {
-  const alarms = await chrome.alarms.getAll();
+  const alarm = await chrome.alarms.get("updateTime");
 
-  if (!alarms.length) {
-    const { task } = await chrome.storage.local.get("task");
-
-    if (Object.keys(task).length) {
-      const today = new Date();
-      const taskDate = new Date(task.startTime).getDate();
-      const taskMonth = new Date(task.startTime).getMonth();
-      const taskYear = new Date(task.startTime).getFullYear();
-
-      if (
-        today.getDate() != taskDate ||
-        today.getMonth() != taskMonth ||
-        today.getFullYear() != taskYear
-      ) {
-        chrome.alarms.create("updateTime", { when: Date.now() });
-      }
-    }
-
+  if (!alarm) {
     const midnight = new Date();
     midnight.setHours(0, 0, 0, 0);
     midnight.setDate(midnight.getDate() + 1);
+
+    chrome.alarms.create({ when: Date.now() + 30 * 1000 });
     chrome.alarms.create("updateTime", {
       when: midnight.getTime(),
       periodInMinutes: 60 * 24,

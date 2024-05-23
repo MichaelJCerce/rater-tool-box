@@ -10,20 +10,17 @@ async function submitTask(e) {
   e.preventDefault();
 
   const message = "submitTask";
-  const { settings, task, totalAET, totalMinutesWorked } =
-    await chrome.storage.local.get([
-      "settings",
-      "task",
-      "totalAET",
-      "totalMinutesWorked",
-    ]);
+  const { settings, task, totalAET } = await chrome.storage.local.get([
+    "settings",
+    "task",
+    "totalAET",
+  ]);
 
   await chrome.runtime.sendMessage({
     message,
     settings,
     task,
     totalAET,
-    totalMinutesWorked,
     button: this.id,
   });
 
@@ -47,7 +44,7 @@ async function autoSubmitTask() {
 chrome.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
   if (request.message === "toggleAutoSubmit") {
     const { settings } = await chrome.storage.local.get("settings");
-    
+
     if (!settings.autoSubmit) {
       clearInterval(autoSubmitInterval);
     } else {

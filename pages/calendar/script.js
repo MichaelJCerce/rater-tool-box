@@ -39,7 +39,7 @@ async function initializeCalendar() {
 
 async function drawCalendar(month, year) {
   const message = "getTime";
-  const { time, roundedTotalHoursWorked } = await chrome.runtime.sendMessage({
+  const { time, totalRoundedHours } = await chrome.runtime.sendMessage({
     message,
   });
 
@@ -167,7 +167,7 @@ async function drawCalendar(month, year) {
       adjustedYear === currYear
     ) {
       day.classList.add("current");
-      hours = +roundedTotalHoursWorked;
+      hours = +totalRoundedHours;
     }
 
     if (hours > 8) {
@@ -241,7 +241,7 @@ currMonthButton.addEventListener("click", function (e) {
 chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
   if (request.message === "updateCalendarCurrentday") {
     const curr = document.querySelector(".current.day h4");
-    curr.textContent = request.roundedTotalHoursWorked + " hours";
+    curr.textContent = request.totalRoundedHours + " hours";
   } else if (request.message === "updateCalendarLayout") {
     destroyCalendar();
     initializeCalendar();

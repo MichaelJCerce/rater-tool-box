@@ -1,4 +1,4 @@
-chrome.runtime.onInstalled.addListener(async (details) => {
+chrome.runtime.onInstalled.addListener(async function (details) {
   if (details.reason === chrome.runtime.OnInstalledReason.INSTALL) {
     await chrome.storage.local.set({
       settings: {
@@ -12,7 +12,6 @@ chrome.runtime.onInstalled.addListener(async (details) => {
       task: {},
       time: createTime(),
       totalAET: 0,
-      totalMinutesWorked: 0,
     });
   }
 
@@ -28,15 +27,11 @@ chrome.runtime.onStartup.addListener(function () {
 chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
   if (request.message === "submitTask") {
     const { settings, task, button } = request;
-    let { totalAET, totalMinutesWorked } = request;
+    let { totalAET } = request;
 
     if (button === "ewok-task-submit-done-button") {
       settings.tempAutoGrab = false;
       chrome.storage.local.set({ settings });
-    }
-
-    if (!Object.keys(task).length) {
-      return;
     }
 
     if (!task.submitted) {
@@ -44,14 +39,10 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
       task.submitted = true;
     }
 
-    totalMinutesWorked += (Date.now() - task.startTime) / 1000 / 60;
-    task.startTime = Date.now();
-
     (async () => {
       await chrome.storage.local.set({
         task,
         totalAET,
-        totalMinutesWorked,
       });
 
       setIconAndBadgeText();
@@ -72,19 +63,14 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
     chrome.storage.local.set({ settings });
   } else if (request.message === "getTime") {
     (async () => {
-      const { time, totalAET, totalMinutesWorked } =
-        await chrome.storage.local.get([
-          "time",
-          "totalAET",
-          "totalMinutesWorked",
-        ]);
+      const { time, totalAET } = await chrome.storage.local.get([
+        "time",
+        "totalAET",
+      ]);
 
-      const roundedTotalHoursWorked = calcRoundedTotalHoursWorked(
-        totalMinutesWorked,
-        totalAET
-      );
+      const totalRoundedHours = calcTotalRoundedHours(totalAET);
 
-      sendResponse({ time, roundedTotalHoursWorked });
+      sendResponse({ time, totalRoundedHours });
     })();
 
     return true;
@@ -104,8 +90,8 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
           ],
         },
         function (tabs) {
-          if (tabs.length) {
-            chrome.tabs.sendMessage(tabs[0].id, { message: "toggleAutoGrab" });
+          for (let i = 0; i < tabs.length; i++) {
+            chrome.tabs.sendMessage(tabs[i].id, { message: "toggleAutoGrab" });
           }
         }
       );
@@ -143,14 +129,9 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
   }
 });
 
-chrome.alarms.onAlarm.addListener(async () => {
-  const { task, time, totalAET, totalMinutesWorked } =
-    await chrome.storage.local.get([
-      "task",
-      "time",
-      "totalAET",
-      "totalMinutesWorked",
-    ]);
+chrome.alarms.onAlarm.addListener(async function () {
+  const { task, time } = await chrome.storage.local.get(["task", "time"]);
+  let { totalAET } = await chrome.storage.local.get("totalAET");
 
   if (Object.keys(task).length) {
     const today = new Date();
@@ -163,21 +144,36 @@ chrome.alarms.onAlarm.addListener(async () => {
       today.getMonth() !== taskMonth ||
       today.getFullYear() !== taskYear
     ) {
-      const roundedTotalHoursWorked = Number(
-        calcRoundedTotalHoursWorked(totalMinutesWorked, totalAET)
+      await chrome.tabs.query(
+        {
+          url: "https://www.raterhub.com/evaluation/rater/task/show*",
+        },
+        function (tabs) {
+          if (tabs.length) {
+            const url = tabs[0].url;
+            if (
+              url.substring(url.indexOf("=") + 1) === task.id &&
+              task.submitted
+            ) {
+              totalAET -= task.aet;
+              task.submitted = false;
+            }
+          }
+        }
       );
+
+      const totalRoundedHours = Number(calcTotalRoundedHours(totalAET));
 
       if (!time[taskYear]) {
         time.addYear(taskYear);
       }
 
-      time[taskYear][taskMonth][taskDate - 1] += roundedTotalHoursWorked;
+      time[taskYear][taskMonth][taskDate - 1] += totalRoundedHours;
 
       await chrome.storage.local.set({
         task: task.submitted ? {} : task,
         time,
         totalAET: 0,
-        totalMinutesWorked: 0,
       });
 
       setIconAndBadgeText();
@@ -204,45 +200,38 @@ function createTime() {
   return time;
 }
 
-function isGoodPace(roundedTotalHoursWorked, totalAET) {
-  const roundedTotalMinutesWorkedRatio =
-    (+roundedTotalHoursWorked * 60) / totalAET;
+function isGoodPace(totalRoundedHours, totalAET) {
+  const totalRoundedMinutesRatio = (+totalRoundedHours * 60) / totalAET;
 
-  if (roundedTotalMinutesWorkedRatio > 1.1) {
+  if (totalRoundedMinutesRatio > 1.1) {
     return false;
   }
   return true;
 }
 
-function calcRoundedTotalHoursWorked(totalMinutesWorked, totalAET) {
+function calcTotalRoundedHours(totalAET) {
   let multiplier = 1.09;
-  let roundedTotalHoursWorked;
+  let totalRoundedHours;
 
   for (let i = 9; i > -1; --i) {
-    roundedTotalHoursWorked = (
-      Math.ceil(Math.round(totalMinutesWorked * multiplier) / 6) * 0.1
+    totalRoundedHours = (
+      Math.ceil(Math.round(totalAET * multiplier) / 6) * 0.1
     ).toFixed(1);
-    if (isGoodPace(roundedTotalHoursWorked, totalAET)) {
+    if (isGoodPace(totalRoundedHours, totalAET)) {
       break;
     }
     multiplier -= 0.01;
   }
 
-  return roundedTotalHoursWorked;
+  return totalRoundedHours;
 }
 
 async function setIconAndBadgeText() {
-  const { totalAET, totalMinutesWorked } = await chrome.storage.local.get([
-    "totalAET",
-    "totalMinutesWorked",
-  ]);
+  const { totalAET } = await chrome.storage.local.get(["totalAET"]);
 
-  let roundedTotalHoursWorked = calcRoundedTotalHoursWorked(
-    totalMinutesWorked,
-    totalAET
-  );
+  let totalRoundedHours = calcTotalRoundedHours(totalAET);
 
-  if (isGoodPace(roundedTotalHoursWorked, totalAET)) {
+  if (isGoodPace(totalRoundedHours, totalAET)) {
     chrome.action.setIcon({
       path: {
         16: "../assets/images/good_pace_16.png",
@@ -260,14 +249,14 @@ async function setIconAndBadgeText() {
     });
   }
 
-  if (Number(roundedTotalHoursWorked) > 8) {
-    roundedTotalHoursWorked = "8.0";
+  if (Number(totalRoundedHours) > 8) {
+    totalRoundedHours = "8.0";
   }
 
   chrome.runtime.sendMessage(
     {
       message: "updateCalendarCurrentday",
-      roundedTotalHoursWorked,
+      totalRoundedHours,
     },
     function (response) {
       if (
@@ -282,7 +271,7 @@ async function setIconAndBadgeText() {
 
   chrome.action.setBadgeBackgroundColor({ color: "#92B3F4" });
   chrome.action.setBadgeText({
-    text: roundedTotalHoursWorked,
+    text: totalRoundedHours,
   });
 }
 

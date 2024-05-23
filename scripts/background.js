@@ -89,9 +89,55 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
 
     return true;
   } else if (request.message === "updateSettings") {
-    const { newSettings } = request;
+    (async () => {
+      const { newSettings } = request;
 
-    chrome.storage.local.set({ settings: newSettings });
+      await chrome.storage.local.set({ settings: newSettings });
+
+      chrome.tabs.query(
+        {
+          url: [
+            "https://www.raterhub.com/evaluation/rater",
+            "https://www.raterhub.com/evaluation/rater/",
+            "https://www.raterhub.com/evaluation/rater/task/index",
+            "https://www.raterhub.com/evaluation/rater/task/index/",
+          ],
+        },
+        function (tabs) {
+          if (tabs.length) {
+            chrome.tabs.sendMessage(tabs[0].id, { message: "toggleAutoGrab" });
+          }
+        }
+      );
+
+      chrome.tabs.query(
+        {
+          url: "https://www.raterhub.com/evaluation/rater/task/show*",
+        },
+        function (tabs) {
+          if (tabs.length) {
+            chrome.tabs.sendMessage(tabs[0].id, {
+              message: "toggleAutoSubmit",
+            });
+          }
+        }
+      );
+
+      chrome.runtime.sendMessage(
+        {
+          message: "updateCalendarLayout",
+        },
+        function (response) {
+          if (
+            chrome.runtime.lastError.message !=
+            "The message port closed before a response was received."
+          ) {
+            console.log("calendar not open");
+            return;
+          }
+        }
+      );
+    })();
   } else if (request.message === "reload") {
     chrome.tabs.reload(sender.tab.id);
   }
@@ -217,6 +263,22 @@ async function setIconAndBadgeText() {
   if (Number(roundedTotalHoursWorked) > 8) {
     roundedTotalHoursWorked = "8.0";
   }
+
+  chrome.runtime.sendMessage(
+    {
+      message: "updateCalendarCurrentday",
+      roundedTotalHoursWorked,
+    },
+    function (response) {
+      if (
+        chrome.runtime.lastError.message !=
+        "The message port closed before a response was received."
+      ) {
+        console.log("calendar not open");
+        return;
+      }
+    }
+  );
 
   chrome.action.setBadgeBackgroundColor({ color: "#92B3F4" });
   chrome.action.setBadgeText({

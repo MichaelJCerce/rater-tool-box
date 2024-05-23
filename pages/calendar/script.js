@@ -5,20 +5,35 @@ const nextMonthButton = document.querySelector(".next-month");
 const prevMonthButton = document.querySelector(".prev-month");
 const currMonthButton = document.querySelector(".curr-month");
 
+const sunday = document.createElement("h2");
+sunday.textContent = "Sunday";
+const monday = document.createElement("h2");
+monday.textContent = "Monday";
+const tuesday = document.createElement("h2");
+tuesday.textContent = "Tuesday";
+const wednesday = document.createElement("h2");
+wednesday.textContent = "Wednesday";
+const thursday = document.createElement("h2");
+thursday.textContent = "Thurday";
+const friday = document.createElement("h2");
+friday.textContent = "Friday";
+const saturday = document.createElement("h2");
+saturday.textContent = "Saturday";
+const dayNames = [
+  sunday,
+  monday,
+  tuesday,
+  wednesday,
+  thursday,
+  friday,
+  saturday,
+];
+
 let month = new Date().getMonth();
 let year = new Date().getFullYear();
-let monday = false;
+let mondayOffset = false;
 
 async function initializeCalendar() {
-  const { settings } = await chrome.storage.local.get("settings");
-  if (settings.startMonday) {
-    for (let i = 1; i < 7; ++i) {
-      let currDay = days.children[i - 1].textContent;
-      days.children[i - 1].textContent = days.children[i].textContent;
-      days.children[i].textContent = currDay;
-    }
-    monday = true;
-  }
   drawCalendar(month, year);
 }
 
@@ -27,6 +42,16 @@ async function drawCalendar(month, year) {
   const { time, roundedTotalHoursWorked } = await chrome.runtime.sendMessage({
     message,
   });
+
+  const { settings } = await chrome.storage.local.get("settings");
+
+  let offset = 0;
+  if (settings.startMonday) {
+    offset = 1;
+    mondayOffset = true;
+  } else {
+    mondayOffset = false;
+  }
 
   const payday = new Date(time.payday);
 
@@ -85,9 +110,12 @@ async function drawCalendar(month, year) {
       break;
   }
   monthAndYear.textContent = `${monthString + ", " + year}`;
+  for (let i = 0; i < 7; ++i) {
+    days.appendChild(dayNames[(i + offset) % 7]);
+  }
 
-  const lastOffset = monday ? lastMondayOffset : lastSundayOffset;
-  const nextOffset = monday ? nextMondayOffset : nextSundayOffset;
+  const lastOffset = mondayOffset ? lastMondayOffset : lastSundayOffset;
+  const nextOffset = mondayOffset ? nextMondayOffset : nextSundayOffset;
   let dateAdjuster = lastOffset - 1;
 
   for (let i = 0; i < lastOffset + thisMonthMaxDays + nextOffset; ++i) {
@@ -167,7 +195,7 @@ async function drawCalendar(month, year) {
 
 function destroyCalendar() {
   let totalDays = days.children.length;
-  for (let i = 7; i < totalDays; ++i) {
+  for (let i = 0; i < totalDays; ++i) {
     const day = days.lastChild;
     days.removeChild(day);
   }
@@ -208,6 +236,16 @@ currMonthButton.addEventListener("click", function (e) {
   destroyCalendar();
 
   drawCalendar(month, year);
+});
+
+chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
+  if (request.message === "updateCalendarCurrentday") {
+    const curr = document.querySelector(".current.day h4");
+    curr.textContent = request.roundedTotalHoursWorked + " hours";
+  } else if (request.message === "updateCalendarLayout") {
+    destroyCalendar();
+    initializeCalendar();
+  }
 });
 
 initializeCalendar();

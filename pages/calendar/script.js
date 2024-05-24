@@ -1,8 +1,8 @@
 const calendar = document.querySelector(".calendar");
 const monthAndYear = document.querySelector(".month-year");
 const days = document.querySelector(".days");
-const nextMonthButton = document.querySelector(".next-month");
 const prevMonthButton = document.querySelector(".prev-month");
+const nextMonthButton = document.querySelector(".next-month");
 const currMonthButton = document.querySelector(".curr-month");
 
 const sunday = document.createElement("h2");
@@ -29,102 +29,84 @@ const dayNames = [
   saturday,
 ];
 
-let month = new Date().getMonth();
-let year = new Date().getFullYear();
-let mondayOffset = false;
-
-async function initializeCalendar() {
-  drawCalendar(month, year);
-}
-
-async function drawCalendar(month, year) {
+async function drawCalendar(monthIndex, year) {
   const message = "getTime";
   const { time, totalRoundedHours } = await chrome.runtime.sendMessage({
     message,
   });
 
-  const { settings } = await chrome.storage.local.get("settings");
-
-  let offset = 0;
-  if (settings.startMonday) {
-    offset = 1;
-    mondayOffset = true;
-  } else {
-    mondayOffset = false;
-  }
-
+  const today = new Date();
   const payday = new Date(time.payday);
 
-  const currDate = new Date().getDate();
-  const currMonth = new Date().getMonth();
-  const currYear = new Date().getFullYear();
+  const { settings } = await chrome.storage.local.get("settings");
+  const startMondayOffset = settings.startMonday ? 1 : 0;
 
-  const thisMonthMaxDays = new Date(year, month + 1, 0).getDate();
-  const lastMonthMaxDays = new Date(year, month, 0).getDate();
+  const thisMonthMaxDays = new Date(year, monthIndex + 1, 0).getDate();
+  const lastMonthMaxDays = new Date(year, monthIndex, 0).getDate();
 
-  const lastSundayOffset = new Date(year, month, 1).getDay();
+  const lastSundayOffset = new Date(year, monthIndex, 1).getDay();
   const lastMondayOffset =
     lastSundayOffset - 1 >= 0 ? lastSundayOffset - 1 : lastSundayOffset - 1 + 7;
 
-  const nextSundayOffset = 6 - new Date(year, month + 1, 0).getDay();
+  const nextSundayOffset = 6 - new Date(year, monthIndex + 1, 0).getDay();
   const nextMondayOffset =
     nextSundayOffset + 1 === 7 ? 0 : nextSundayOffset + 1;
 
-  let monthString;
-  switch (month) {
+  let month;
+  switch (monthIndex) {
     case 0:
-      monthString = "January";
+      month = "January";
       break;
     case 1:
-      monthString = "Febuary";
+      month = "Febuary";
       break;
     case 2:
-      monthString = "March";
+      month = "March";
       break;
     case 3:
-      monthString = "April";
+      month = "April";
       break;
     case 4:
-      monthString = "May";
+      month = "May";
       break;
     case 5:
-      monthString = "June";
+      month = "June";
       break;
     case 6:
-      monthString = "July";
+      month = "July";
       break;
     case 7:
-      monthString = "August";
+      month = "August";
       break;
     case 8:
-      monthString = "September";
+      month = "September";
       break;
     case 9:
-      monthString = "October";
+      month = "October";
       break;
     case 10:
-      monthString = "November";
+      month = "November";
       break;
     case 11:
-      monthString = "December";
+      month = "December";
       break;
   }
-  monthAndYear.textContent = `${monthString + ", " + year}`;
+
+  monthAndYear.textContent = `${month + ", " + year}`;
   for (let i = 0; i < 7; ++i) {
-    days.appendChild(dayNames[(i + offset) % 7]);
+    days.appendChild(dayNames[(i + startMondayOffset) % 7]);
   }
 
-  const lastOffset = mondayOffset ? lastMondayOffset : lastSundayOffset;
-  const nextOffset = mondayOffset ? nextMondayOffset : nextSundayOffset;
+  const lastOffset = startMondayOffset ? lastMondayOffset : lastSundayOffset;
+  const nextOffset = startMondayOffset ? nextMondayOffset : nextSundayOffset;
   let dateAdjuster = lastOffset - 1;
-
   for (let i = 0; i < lastOffset + thisMonthMaxDays + nextOffset; ++i) {
     const day = document.createElement("div");
     const h3 = document.createElement("h3");
     const h4 = document.createElement("h4");
 
     let adjustedDate = 0;
-    let adjustedMonth = month;
+    let adjustedMonthIndex = monthIndex;
     let adjustedYear = year;
     let hours = 0;
 
@@ -132,9 +114,9 @@ async function drawCalendar(month, year) {
       adjustedDate = lastMonthMaxDays - dateAdjuster;
       dateAdjuster -= 1;
 
-      adjustedMonth = month - 1;
-      if (adjustedMonth == -1) {
-        adjustedMonth = 11;
+      adjustedMonthIndex = monthIndex - 1;
+      if (adjustedMonthIndex == -1) {
+        adjustedMonthIndex = 11;
         adjustedYear -= 1;
       }
 
@@ -145,9 +127,9 @@ async function drawCalendar(month, year) {
     } else {
       adjustedDate = i + 1 - (thisMonthMaxDays + lastOffset);
 
-      adjustedMonth += 1;
-      if (adjustedMonth === 12) {
-        adjustedMonth = 0;
+      adjustedMonthIndex += 1;
+      if (adjustedMonthIndex === 12) {
+        adjustedMonthIndex = 0;
         adjustedYear += 1;
       }
 
@@ -155,26 +137,31 @@ async function drawCalendar(month, year) {
     }
 
     if (time[adjustedYear]) {
-      hours = time[adjustedYear][adjustedMonth][adjustedDate - 1];
-      if (hours > 0) {
-        day.classList.add("worked");
-      }
+      hours = time[adjustedYear][adjustedMonthIndex][adjustedDate - 1];
     }
 
     if (
-      adjustedDate === currDate &&
-      adjustedMonth === currMonth &&
-      adjustedYear === currYear
+      adjustedDate === today.getDate() &&
+      adjustedMonthIndex === today.getMonth() &&
+      adjustedYear === today.getFullYear()
     ) {
       day.classList.add("current");
       hours = +totalRoundedHours;
+    }
+
+    if (hours > 0) {
+      day.classList.add("worked");
     }
 
     if (hours > 8) {
       hours = 8;
     }
 
-    const potentialPayDay = new Date(adjustedYear, adjustedMonth, adjustedDate);
+    const potentialPayDay = new Date(
+      adjustedYear,
+      adjustedMonthIndex,
+      adjustedDate
+    );
     if (
       Math.round(Math.abs(potentialPayDay - payday) / 1000 / 60 / 60 / 24) %
         14 ===
@@ -194,58 +181,59 @@ async function drawCalendar(month, year) {
 }
 
 function destroyCalendar() {
-  let totalDays = days.children.length;
+  const totalDays = days.children.length;
   for (let i = 0; i < totalDays; ++i) {
-    const day = days.lastChild;
-    days.removeChild(day);
+    days.removeChild(days.lastChild);
   }
 }
 
 nextMonthButton.addEventListener("click", function (e) {
   e.preventDefault();
 
-  destroyCalendar();
-
-  month += 1;
-  if (month == 12) {
+  monthIndex += 1;
+  if (monthIndex == 12) {
     year += 1;
-    month = 0;
+    monthIndex = 0;
   }
 
-  drawCalendar(month, year);
+  destroyCalendar();
+  drawCalendar(monthIndex, year);
 });
 
 prevMonthButton.addEventListener("click", function (e) {
   e.preventDefault();
 
-  destroyCalendar();
-
-  month -= 1;
-  if (month == -1) {
+  monthIndex -= 1;
+  if (monthIndex == -1) {
     year -= 1;
-    month = 11;
+    monthIndex = 11;
   }
 
-  drawCalendar(month, year);
+  destroyCalendar();
+  drawCalendar(monthIndex, year);
 });
 
 currMonthButton.addEventListener("click", function (e) {
   e.preventDefault();
-  month = new Date().getMonth();
-  year = new Date().getFullYear();
-  destroyCalendar();
 
-  drawCalendar(month, year);
+  monthIndex = new Date().getMonth();
+  year = new Date().getFullYear();
+
+  destroyCalendar();
+  drawCalendar(monthIndex, year);
 });
 
 chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
-  if (request.message === "updateCalendarCurrentday") {
-    const curr = document.querySelector(".current.day h4");
-    curr.textContent = request.totalRoundedHours + " hours";
+  if (request.message === "updateCalendarDay") {
+    const todayHoursDisplay = document.querySelector(".current.day > h4");
+    todayHoursDisplay.textContent = request.totalRoundedHours + " hours";
   } else if (request.message === "updateCalendarLayout") {
     destroyCalendar();
-    initializeCalendar();
+    drawCalendar(monthIndex, year);
   }
 });
 
-initializeCalendar();
+let monthIndex = new Date().getMonth();
+let year = new Date().getFullYear();
+
+drawCalendar(monthIndex, year);

@@ -1,29 +1,27 @@
 {
   "manifest_version": 3,
   "name": "Rater Tool Box",
-  "version": "2.0",
+  "version": "1.0",
   "description": "Provides helpful features for Search Quality Raters.",
   "icons": {
-    "16": "./assets/images/good_pace_16.png",
-    "32": "./assets/images/good_pace_32.png",
-    "48": "./assets/images/good_pace_48.png",
-    "128": "./assets/images/good_pace_128.png"
+    "16": "./assets/images/rtb_16.png",
+    "24": "./assets/images/rtb_24.png",
+    "32": "./assets/images/rtb_32.png",
+    "48": "./assets/images/rtb_48.png",
+    "128": "./assets/images/rtb_128.png"
+  },
+  "action": {
+    "default_popup": "./pages/popup/popup.html",
+    "default_icon": {
+      "16": "./assets/images/rtb_16.png",
+      "24": "./assets/images/rtb_24.png",
+      "32": "./assets/images/rtb_32.png"
+    }
   },
   "background": {
     "service_worker": "./scripts/background.js"
   },
-  "action": {
-    "default_popup": "./pages/popup/popup.html"
-  },
   "content_scripts": [
-    {
-      "js": [
-        "./scripts/update-task.js",
-        "./scripts/open-results.js",
-        "./scripts/submit-task.js"
-      ],
-      "matches": ["https://www.raterhub.com/evaluation/rater/task/show*"]
-    },
     {
       "js": ["./scripts/grab-task.js"],
       "matches": [
@@ -32,6 +30,14 @@
         "https://www.raterhub.com/evaluation/rater/task/index",
         "https://www.raterhub.com/evaluation/rater/task/index/"
       ]
+    },
+    {
+      "js": [
+        "./scripts/update-task.js",
+        "./scripts/open-results.js",
+        "./scripts/submit-task.js"
+      ],
+      "matches": ["https://www.raterhub.com/evaluation/rater/task/show*"]
     }
   ],
   "permissions": ["alarms", "offscreen", "storage", "tabs"]

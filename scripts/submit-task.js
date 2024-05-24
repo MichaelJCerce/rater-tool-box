@@ -24,44 +24,45 @@ async function submitTask(e) {
     button: this.id,
   });
 
-  form.requestSubmit(this);
+  this.focus();
+  form.submit();
 }
 
 async function autoSubmitTask() {
   const { settings } = await chrome.storage.local.get("settings");
+  const button = settings.autoGrab ? submitButton : submitDoneButton;
   const aet = +document
     .querySelector(".ewok-estimated-task-weight")
     .textContent.split(" ")[2];
 
   if (settings.autoSubmit) {
-    autoSubmitInterval = setTimeout(
-      () => submitButton.click(),
-      aet * 60 * 1000
-    );
+    autoSubmitInterval = setTimeout(() => button.click(), aet * 60 * 1000);
   }
 }
 
 chrome.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
-  if (request.message === "toggleAutoSubmit") {
-    const { settings } = await chrome.storage.local.get("settings");
+  if (request.message === "updateTabs") {
+    clearTimeout(autoSubmitInterval);
 
-    if (!settings.autoSubmit) {
-      clearInterval(autoSubmitInterval);
-    } else {
+    const { settings } = await chrome.storage.local.get("settings");
+    if (settings.autoSubmit) {
+      const button = settings.autoGrab ? submitButton : submitDoneButton;
       const aet = +document
         .querySelector(".ewok-estimated-task-weight")
         .textContent.split(" ")[2];
-      const current = document.querySelector("title").textContent.split(" ")[0];
-      const minutes = Number(current.substring(0, current.indexOf(":")));
-      const seconds = Number(current.substring(current.indexOf(":") + 1)) / 60;
-      const total = minutes + seconds;
+      const timeWorked = document
+        .querySelector("title")
+        .textContent.split(" ")[0];
+      const minutes = Number(timeWorked.substring(0, timeWorked.indexOf(":")));
+      const seconds = Number(timeWorked.substring(timeWorked.indexOf(":") + 1));
+      const totalMinutesWorked = minutes + seconds / 60;
 
-      if (aet - total <= 0) {
-        submitButton.click();
+      if (aet - totalMinutesWorked <= 0) {
+        button.click();
       } else {
         autoSubmitInterval = setTimeout(
-          () => submitButton.click(),
-          (aet - total) * 60 * 1000
+          () => button.click(),
+          (aet - totalMinutesWorked) * 60 * 1000
         );
       }
     }

@@ -11,7 +11,7 @@ body {
   padding-bottom: 10px;
   display: grid;
   grid-template-rows: auto 1fr auto;
-  gap: 10px;
+  gap: 5px;
   justify-content: center;
 }
 
@@ -31,6 +31,33 @@ body {
   background-color: white;
 }
 
+.past,
+.future {
+  background-color: lightblue;
+}
+
+.worked > h4 {
+  justify-self: center;
+  align-self: center;
+}
+
+.pay {
+  background-color: plum;
+}
+
+.current {
+  background-color: lightcoral;
+}
+
+.actions {
+  display: flex;
+  gap: 10px;
+}
+
+.curr-month {
+  margin-left: auto;
+}
+
 h1,
 h2 {
   margin: 0;
@@ -45,7 +72,10 @@ h3 {
 h4 {
   padding-bottom: 25px;
   margin: 0;
-  color: transparent;
+}
+
+h4::after {
+  content: "\200b";
 }
 
 button {
@@ -56,33 +86,4 @@ button {
   font-family: inherit;
   font-weight: bold;
   cursor: pointer;
-}
-
-.past,
-.future {
-  background-color: lightblue;
-}
-
-.current.day {
-  background-color: darksalmon;
-}
-
-.current h4,
-.worked h4 {
-  justify-self: center;
-  align-self: center;
-  color: black;
-}
-
-.pay {
-  background-color: plum;
-}
-
-.actions {
-  display: flex;
-  gap: 10px;
-}
-
-.curr-month {
-  margin-left: auto;
 }

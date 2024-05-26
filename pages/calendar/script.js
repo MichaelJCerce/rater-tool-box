@@ -108,7 +108,6 @@ async function drawCalendar(monthIndex, year) {
     let adjustedDate = 0;
     let adjustedMonthIndex = monthIndex;
     let adjustedYear = year;
-    let hours = 0;
 
     if (i < lastOffset) {
       adjustedDate = lastMonthMaxDays - dateAdjuster;
@@ -136,6 +135,7 @@ async function drawCalendar(monthIndex, year) {
       day.classList.add("future");
     }
 
+    let hours;
     if (time[adjustedYear]) {
       hours = time[adjustedYear][adjustedMonthIndex][adjustedDate - 1];
     }
@@ -150,11 +150,8 @@ async function drawCalendar(monthIndex, year) {
     }
 
     if (hours > 0) {
+      h4.textContent = `${hours.toFixed(1)} hours`;
       day.classList.add("worked");
-    }
-
-    if (hours > 8) {
-      hours = 8;
     }
 
     const potentialPayDay = new Date(
@@ -171,7 +168,6 @@ async function drawCalendar(monthIndex, year) {
     }
 
     h3.textContent = adjustedDate;
-    h4.textContent = `${hours.toFixed(1)} hours`;
     day.classList.add("day");
 
     day.appendChild(h3);

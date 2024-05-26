@@ -25,7 +25,7 @@ async function submitTask(e) {
   });
 
   this.focus();
-  form.submit();
+  form.requestSubmit(this);
 }
 
 async function autoSubmitTask() {
@@ -34,9 +34,18 @@ async function autoSubmitTask() {
   const aet = +document
     .querySelector(".ewok-estimated-task-weight")
     .textContent.split(" ")[2];
+  const timeWorked = document.querySelector("title").textContent.split(" ")[0];
+  const minutes = Number(timeWorked.substring(0, timeWorked.indexOf(":")));
+  const seconds = Number(timeWorked.substring(timeWorked.indexOf(":") + 1));
+  const totalMinutesWorked = minutes + seconds / 60;
 
-  if (settings.autoSubmit) {
-    autoSubmitInterval = setTimeout(() => button.click(), aet * 60 * 1000);
+  if (aet - totalMinutesWorked <= 0) {
+    button.click();
+  } else {
+    autoSubmitInterval = setTimeout(
+      () => button.click(),
+      (aet - totalMinutesWorked) * 60 * 1000
+    );
   }
 }
 
@@ -46,25 +55,7 @@ chrome.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
 
     const { settings } = await chrome.storage.local.get("settings");
     if (settings.autoSubmit) {
-      const button = settings.autoGrab ? submitButton : submitDoneButton;
-      const aet = +document
-        .querySelector(".ewok-estimated-task-weight")
-        .textContent.split(" ")[2];
-      const timeWorked = document
-        .querySelector("title")
-        .textContent.split(" ")[0];
-      const minutes = Number(timeWorked.substring(0, timeWorked.indexOf(":")));
-      const seconds = Number(timeWorked.substring(timeWorked.indexOf(":") + 1));
-      const totalMinutesWorked = minutes + seconds / 60;
-
-      if (aet - totalMinutesWorked <= 0) {
-        button.click();
-      } else {
-        autoSubmitInterval = setTimeout(
-          () => button.click(),
-          (aet - totalMinutesWorked) * 60 * 1000
-        );
-      }
+      autoSubmitTask();
     }
   }
 });

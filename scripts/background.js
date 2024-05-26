@@ -29,18 +29,18 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
     const { settings, task, button } = request;
     let { totalAET } = request;
 
-    if (button === "ewok-task-submit-done-button") {
-      settings.tempAutoGrab = false;
-      chrome.storage.local.set({ settings });
-    }
-
     if (!task.submitted) {
       totalAET += task.aet;
       task.submitted = true;
     }
 
     (async () => {
+      if (button === "ewok-task-submit-done-button") {
+        settings.tempAutoGrab = false;
+      }
+
       await chrome.storage.local.set({
+        settings,
         task,
         totalAET,
       });
@@ -51,9 +51,7 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
     const { settings, task, currentTask } = request;
 
     if (task.id !== currentTask.id) {
-      if (settings.playAudio) {
-        playAlert();
-      }
+      settings.playAudio && playAlert();
       chrome.storage.local.set({ task: currentTask });
     }
   } else if (request.message === "activateTempAutoGrab") {
@@ -144,6 +142,7 @@ chrome.alarms.onAlarm.addListener(async function () {
               task.submitted
             ) {
               totalAET -= task.aet;
+              task.startTime = Date.now();
               task.submitted = false;
             }
           }
@@ -156,7 +155,7 @@ chrome.alarms.onAlarm.addListener(async function () {
         time.addYear(taskYear);
       }
 
-      time[taskYear][taskMonth][taskDate - 1] += totalRoundedHours;
+      time[taskYear][taskMonth][taskDate - 1] = totalRoundedHours;
 
       await chrome.storage.local.set({
         task: task.submitted ? {} : task,

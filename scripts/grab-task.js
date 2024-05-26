@@ -23,11 +23,10 @@ async function autoGrabTask() {
 
 chrome.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
   if (request.message === "updateTabs") {
-    const { settings } = await chrome.storage.local.get("settings");
+    clearInterval(autoGrabInterval);
 
-    if (!settings.autoGrab) {
-      clearInterval(autoGrabInterval);
-    } else {
+    const { settings } = await chrome.storage.local.get("settings");
+    if (settings.autoGrab) {
       autoGrabTask();
     }
   }

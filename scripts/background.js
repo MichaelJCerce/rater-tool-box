@@ -35,7 +35,7 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
     }
 
     (async () => {
-      if (button === "ewok-task-submit-done-button") {
+      if (button === "ewok-task-submit-done-button" && settings.autoGrab) {
         settings.tempAutoGrab = false;
       }
 
@@ -187,20 +187,11 @@ function createTime() {
   return time;
 }
 
-function isGoodPace(totalRoundedHours, totalAET) {
-  const totalRoundedMinutesRatio = (+totalRoundedHours * 60) / totalAET;
-
-  if (totalRoundedMinutesRatio >= 1.1) {
-    return false;
-  }
-  return true;
-}
-
 function calcTotalRoundedHours(totalAET) {
   let multiplier = 1.09;
-  let totalRoundedHours = `9`;
-
-  while (!isGoodPace(totalRoundedHours, totalAET)) {
+  let totalRoundedHours = `100`;
+  
+  while ((+totalRoundedHours * 60) / totalAET >= 1.1) {
     if (multiplier < 1) {
       totalRoundedHours = (
         Math.ceil(Math.round(totalAET + 1 - 6) / 6) * 0.1
@@ -212,10 +203,6 @@ function calcTotalRoundedHours(totalAET) {
     }
 
     multiplier -= 0.01;
-  }
-
-  if (Number(totalRoundedHours) > 8) {
-    totalRoundedHours = "8.0";
   }
 
   return totalRoundedHours;

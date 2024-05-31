@@ -36,11 +36,6 @@ body {
   background-color: lightblue;
 }
 
-.worked > h4 {
-  justify-self: center;
-  align-self: center;
-}
-
 .pay {
   background-color: plum;
 }
@@ -72,6 +67,8 @@ h3 {
 h4 {
   padding-bottom: 25px;
   margin: 0;
+  justify-self: center;
+  align-self: center;
 }
 
 h4::after {

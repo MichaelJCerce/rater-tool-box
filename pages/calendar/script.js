@@ -222,7 +222,9 @@ currMonthButton.addEventListener("click", function (e) {
 chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
   if (request.message === "updateCalendarDay") {
     const todayHoursDisplay = document.querySelector(".current.day > h4");
-    todayHoursDisplay.textContent = request.totalRoundedHours + " hours";
+    if (todayHoursDisplay) {
+      todayHoursDisplay.textContent = request.totalRoundedHours + " hours";
+    }
   } else if (request.message === "updateCalendarLayout") {
     destroyCalendar();
     drawCalendar(monthIndex, year);

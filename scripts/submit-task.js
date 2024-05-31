@@ -30,22 +30,27 @@ async function submitTask(e) {
 
 async function autoSubmitTask() {
   const { settings } = await chrome.storage.local.get("settings");
-  const button = settings.autoGrab ? submitButton : submitDoneButton;
-  const aet = +document
-    .querySelector(".ewok-estimated-task-weight")
-    .textContent.split(" ")[2];
-  const timeWorked = document.querySelector("title").textContent.split(" ")[0];
-  const minutes = Number(timeWorked.substring(0, timeWorked.indexOf(":")));
-  const seconds = Number(timeWorked.substring(timeWorked.indexOf(":") + 1));
-  const totalMinutesWorked = minutes + seconds / 60;
+  
+  if (settings.autoSubmit) {
+    const button = settings.autoGrab ? submitButton : submitDoneButton;
+    const aet = +document
+      .querySelector(".ewok-estimated-task-weight")
+      .textContent.split(" ")[2];
+    const timeWorked = document
+      .querySelector("title")
+      .textContent.split(" ")[0];
+    const minutes = Number(timeWorked.substring(0, timeWorked.indexOf(":")));
+    const seconds = Number(timeWorked.substring(timeWorked.indexOf(":") + 1));
+    const totalMinutesWorked = minutes + seconds / 60;
 
-  if (aet - totalMinutesWorked <= 0) {
-    button.click();
-  } else {
-    autoSubmitInterval = setTimeout(
-      () => button.click(),
-      (aet - totalMinutesWorked) * 60 * 1000
-    );
+    if (aet - totalMinutesWorked <= 0) {
+      button.click();
+    } else {
+      autoSubmitInterval = setTimeout(
+        () => button.click(),
+        (aet - totalMinutesWorked) * 60 * 1000
+      );
+    }
   }
 }
 

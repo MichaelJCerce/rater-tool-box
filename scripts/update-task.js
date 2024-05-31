@@ -1,9 +1,6 @@
 async function updateTask() {
   const message = "updateTask";
-  const { settings, task } = await chrome.storage.local.get([
-    "settings",
-    "task",
-  ]);
+
   const url = window.location.href;
   const aet = +document
     .querySelector(".ewok-estimated-task-weight")
@@ -16,7 +13,12 @@ async function updateTask() {
     submitted: false,
   };
 
-  chrome.runtime.sendMessage({ message, settings, task, currentTask });
+  const { settings, task } = await chrome.storage.local.get([
+    "settings",
+    "task",
+  ]);
+
+  chrome.runtime.sendMessage({ message, currentTask, settings, task });
 }
 
 updateTask();

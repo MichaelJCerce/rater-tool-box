@@ -10,18 +10,18 @@ async function submitTask(e) {
   e.preventDefault();
 
   const message = "submitTask";
-  const { settings, task, totalAET } = await chrome.storage.local.get([
+  const { settings, task, workHistory } = await chrome.storage.local.get([
     "settings",
     "task",
-    "totalAET",
+    "workHistory",
   ]);
 
   await chrome.runtime.sendMessage({
     message,
+    button: this.id,
     settings,
     task,
-    totalAET,
-    button: this.id,
+    workHistory,
   });
 
   this.focus();
@@ -30,7 +30,7 @@ async function submitTask(e) {
 
 async function autoSubmitTask() {
   const { settings } = await chrome.storage.local.get("settings");
-  
+
   if (settings.autoSubmit) {
     const button = settings.autoGrab ? submitButton : submitDoneButton;
     const aet = +document

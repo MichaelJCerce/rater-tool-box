@@ -30,19 +30,18 @@ const dayNames = [
 ];
 
 async function drawCalendar(monthIndex, year) {
-  const message = "getTime";
-  const { time, totalRoundedHours } = await chrome.runtime.sendMessage({
-    message,
-  });
+  const { settings, workHistory } = await chrome.storage.local.get([
+    "settings",
+    "workHistory",
+  ]);
 
   const today = new Date();
-  const payday = new Date(time.payday);
-
-  const { settings } = await chrome.storage.local.get("settings");
-  const startMondayOffset = settings.startMonday ? 1 : 0;
+  const payday = new Date(workHistory.payday);
 
   const thisMonthMaxDays = new Date(year, monthIndex + 1, 0).getDate();
   const lastMonthMaxDays = new Date(year, monthIndex, 0).getDate();
+
+  const startMondayOffset = settings.startMonday ? 1 : 0;
 
   const lastSundayOffset = new Date(year, monthIndex, 1).getDay();
   const lastMondayOffset =
@@ -135,22 +134,23 @@ async function drawCalendar(monthIndex, year) {
       day.classList.add("future");
     }
 
-    let hours;
-    if (time[adjustedYear]) {
-      hours = time[adjustedYear][adjustedMonthIndex][adjustedDate - 1];
-    }
-
     if (
       adjustedDate === today.getDate() &&
       adjustedMonthIndex === today.getMonth() &&
       adjustedYear === today.getFullYear()
     ) {
       day.classList.add("current");
-      hours = +totalRoundedHours;
     }
 
-    if (hours > 0) {
-      h4.textContent = `${hours.toFixed(1)} hours`;
+    let hours = "0.0";
+    if (workHistory.years[adjustedYear]) {
+      hours = calcTotalRoundedHours(
+        workHistory.years[adjustedYear][adjustedMonthIndex][adjustedDate - 1]
+      );
+    }
+
+    if (hours !== "0.0") {
+      h4.textContent = `${hours} hours`;
       day.classList.add("worked");
     }
 
@@ -182,6 +182,27 @@ function destroyCalendar() {
     days.removeChild(days.lastChild);
   }
 }
+
+const calcTotalRoundedHours = function (totalAET) {
+  let multiplier = 1.09;
+  let totalRoundedHours = `100`;
+
+  while ((+totalRoundedHours * 60) / totalAET >= 1.1) {
+    if (multiplier < 1) {
+      totalRoundedHours = (
+        Math.ceil(Math.round(totalAET + 1 - 6) / 6) * 0.1
+      ).toFixed(1);
+    } else {
+      totalRoundedHours = (
+        Math.ceil(Math.round(totalAET * multiplier) / 6) * 0.1
+      ).toFixed(1);
+    }
+
+    multiplier -= 0.01;
+  }
+
+  return totalRoundedHours;
+};
 
 nextMonthButton.addEventListener("click", function (e) {
   e.preventDefault();
@@ -225,7 +246,7 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
     if (todayHoursDisplay) {
       todayHoursDisplay.textContent = request.totalRoundedHours + " hours";
     }
-  } else if (request.message === "updateCalendarLayout") {
+  } else if (request.message === "redrawCalendar") {
     destroyCalendar();
     drawCalendar(monthIndex, year);
   }

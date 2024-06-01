@@ -8,17 +8,15 @@ async function updateTask() {
 
   const currentTask = {
     id: url.substring(url.indexOf("=") + 1),
-    startTime: Date.now(),
     aet,
-    submitted: false,
   };
 
-  const { settings, task } = await chrome.storage.local.get([
+  const { settings, tasks } = await chrome.storage.local.get([
     "settings",
-    "task",
+    "tasks",
   ]);
 
-  chrome.runtime.sendMessage({ message, currentTask, settings, task });
+  chrome.runtime.sendMessage({ message, currentTask, settings, tasks });
 }
 
 updateTask();

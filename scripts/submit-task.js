@@ -10,9 +10,9 @@ async function submitTask(e) {
   e.preventDefault();
 
   const message = "submitTask";
-  const { settings, task, workHistory } = await chrome.storage.local.get([
+  const { settings, tasks, workHistory } = await chrome.storage.local.get([
     "settings",
-    "task",
+    "tasks",
     "workHistory",
   ]);
 
@@ -20,7 +20,7 @@ async function submitTask(e) {
     message,
     button: this.id,
     settings,
-    task,
+    tasks,
     workHistory,
   });
 
@@ -29,13 +29,20 @@ async function submitTask(e) {
 }
 
 async function autoSubmitTask() {
-  const { settings } = await chrome.storage.local.get("settings");
+  const { settings, tasks } = await chrome.storage.local.get([
+    "settings",
+    "tasks",
+  ]);
+  const url = window.location.href;
+  const aet = +document
+    .querySelector(".ewok-estimated-task-weight")
+    .textContent.split(" ")[2];
 
-  if (settings.autoSubmit) {
+  if (
+    settings.autoSubmit &&
+    !(url.substring(url.indexOf("=") + 1) in tasks.submitted)
+  ) {
     const button = settings.autoGrab ? submitButton : submitDoneButton;
-    const aet = +document
-      .querySelector(".ewok-estimated-task-weight")
-      .textContent.split(" ")[2];
     const timeWorked = document
       .querySelector("title")
       .textContent.split(" ")[0];

@@ -9,7 +9,7 @@ chrome.runtime.onInstalled.addListener(async function (details) {
         startMonday: false,
         tempAutoGrab: true,
       },
-      task: {},
+      tasks: { current: {}, submitted: {} },
       workHistory: createWorkHistory(),
     });
   }
@@ -28,10 +28,18 @@ chrome.runtime.onMessage.addListener(async function (
   sender,
   sendResponse
 ) {
-  if (request.message === "submitTask") {
-    const { button, settings, task, workHistory } = request;
+  if (request.message === "updateTask") {
+    const { currentTask, settings, tasks } = request;
 
-    if (!task.submitted) {
+    if (!(currentTask.id in tasks.submitted)) {
+      settings.playAudio && playAlert();
+      tasks.current = currentTask;
+      chrome.storage.local.set({ tasks });
+    }
+  } else if (request.message === "submitTask") {
+    const { button, settings, tasks, workHistory } = request;
+
+    if (!(tasks.current.id in tasks.submitted)) {
       const today = new Date();
       if (!workHistory.years[today.getFullYear()]) {
         addYear(workHistory, today.getFullYear());
@@ -39,8 +47,8 @@ chrome.runtime.onMessage.addListener(async function (
 
       workHistory.years[today.getFullYear()][today.getMonth()][
         today.getDate() - 1
-      ] += task.aet;
-      task.submitted = true;
+      ] += tasks.current.aet;
+      tasks.submitted[tasks.current.id] = tasks.current.aet;
     }
 
     if (button === "ewok-task-submit-done-button" && settings.autoGrab) {
@@ -49,23 +57,11 @@ chrome.runtime.onMessage.addListener(async function (
 
     await chrome.storage.local.set({
       settings,
-      task,
+      tasks,
       workHistory,
     });
 
     setBadge();
-  } else if (request.message === "updateTask") {
-    const { currentTask, settings, task } = request;
-
-    if (currentTask.id !== task.id) {
-      settings.playAudio && playAlert();
-      chrome.storage.local.set({ task: currentTask });
-    }
-  } else if (request.message === "activateTempAutoGrab") {
-    const { settings } = request;
-
-    settings.tempAutoGrab = true;
-    chrome.storage.local.set({ settings });
   } else if (request.message === "updateSettings") {
     await chrome.storage.local.set({ settings: request.newSettings });
 
@@ -76,7 +72,7 @@ chrome.runtime.onMessage.addListener(async function (
           "https://www.raterhub.com/evaluation/rater/",
           "https://www.raterhub.com/evaluation/rater/task/index",
           "https://www.raterhub.com/evaluation/rater/task/index/",
-          "https://www.raterhub.com/evaluation/rater/task/show*",
+          "https://www.raterhub.com/evaluation/rater/task/show?taskIds=*",
         ],
       },
       function (tabs) {
@@ -90,32 +86,70 @@ chrome.runtime.onMessage.addListener(async function (
 
     chrome.runtime.sendMessage(
       {
-        message: "redrawCalendar",
+        message: "drawCalendar",
       },
       function (response) {
         if (
-          chrome.runtime.lastError.message !=
-          "The message port closed before a response was received."
+          chrome.runtime.lastError.message ===
+          "Could not establish connection. Receiving end does not exist."
         ) {
           console.log("calendar not open");
           return;
         }
       }
     );
+  } else if (request.message === "activateTempAutoGrab") {
+    const { settings } = request;
+
+    settings.tempAutoGrab = true;
+    chrome.storage.local.set({ settings });
   } else if (request.message === "reload") {
     chrome.tabs.reload(sender.tab.id);
   }
 });
 
 chrome.alarms.onAlarm.addListener(async function () {
+  const { tasks, workHistory } = await chrome.storage.local.get([
+    "tasks",
+    "workHistory",
+  ]);
+
+  await chrome.tabs.query(
+    {
+      url: "https://www.raterhub.com/evaluation/rater/task/show?taskIds=*",
+    },
+    function (tabs) {
+      if (tabs.length) {
+        const url = tabs[0].url;
+        if (url.substring(url.indexOf("=") + 1) in tasks.submitted) {
+          let yesterday = new Date();
+          yesterday.setDate(yesterday.getDate() - 1);
+
+          workHistory.years[yesterday.getFullYear()][yesterday.getMonth()][
+            yesterday.getDate() - 1
+          ] -= tasks.current.aet;
+          delete tasks.submitted[tasks.current.id];
+        }
+      }
+    }
+  );
+
+  await chrome.storage.local.set({
+    tasks: {
+      current: tasks.current.id in tasks.submitted ? {} : tasks.current,
+      submitted: {},
+    },
+    workHistory,
+  });
+
   chrome.runtime.sendMessage(
     {
-      message: "redrawCalendar",
+      message: "drawCalendar",
     },
     function (response) {
       if (
-        chrome.runtime.lastError.message !=
-        "The message port closed before a response was received."
+        chrome.runtime.lastError.message ===
+        "Could not establish connection. Receiving end does not exist."
       ) {
         console.log("calendar not open");
         return;
@@ -144,17 +178,21 @@ function createWorkHistory() {
 }
 
 function calcTotalRoundedHours(totalAET) {
+  if (totalAET === 0) {
+    return "0.0";
+  }
+
   let multiplier = 1.09;
   let totalRoundedHours = `100`;
 
   while ((+totalRoundedHours * 60) / totalAET >= 1.1) {
-    if (multiplier < 1) {
+    if (multiplier >= 1) {
       totalRoundedHours = (
-        Math.ceil(Math.round(totalAET + 1 - 6) / 6) * 0.1
+        Math.ceil(Math.round(totalAET * multiplier) / 6) * 0.1
       ).toFixed(1);
     } else {
       totalRoundedHours = (
-        Math.ceil(Math.round(totalAET * multiplier) / 6) * 0.1
+        Math.ceil(Math.round(totalAET + 1 - 6) / 6) * 0.1
       ).toFixed(1);
     }
 
@@ -167,21 +205,25 @@ function calcTotalRoundedHours(totalAET) {
 async function setBadge() {
   const { workHistory } = await chrome.storage.local.get("workHistory");
   const today = new Date();
-  const totalRoundedHours = calcTotalRoundedHours(
-    workHistory.years[today.getFullYear()][today.getMonth()][
-      today.getDate() - 1
-    ]
-  );
+
+  let totalRoundedHours = "0.0";
+  if (workHistory.years[today.getFullYear()]) {
+    totalRoundedHours = calcTotalRoundedHours(
+      workHistory.years[today.getFullYear()][today.getMonth()][
+        today.getDate() - 1
+      ]
+    );
+  }
 
   chrome.runtime.sendMessage(
     {
-      message: "updateCalendarDay",
+      message: "updateCurrentDay",
       totalRoundedHours,
     },
     function (response) {
       if (
-        chrome.runtime.lastError.message !=
-        "The message port closed before a response was received."
+        chrome.runtime.lastError.message ===
+        "Could not establish connection. Receiving end does not exist."
       ) {
         console.log("calendar not open");
         return;

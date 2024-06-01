@@ -37,7 +37,9 @@
         "./scripts/open-results.js",
         "./scripts/submit-task.js"
       ],
-      "matches": ["https://www.raterhub.com/evaluation/rater/task/show*"]
+      "matches": [
+        "https://www.raterhub.com/evaluation/rater/task/show?taskIds=*"
+      ]
     }
   ],
   "permissions": ["alarms", "offscreen", "storage", "tabs"]

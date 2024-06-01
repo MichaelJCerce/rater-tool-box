@@ -29,6 +29,27 @@ const dayNames = [
   saturday,
 ];
 
+const calcTotalRoundedHours = function (totalAET) {
+  let multiplier = 1.09;
+  let totalRoundedHours = `100`;
+
+  while ((+totalRoundedHours * 60) / totalAET >= 1.1) {
+    if (multiplier < 1) {
+      totalRoundedHours = (
+        Math.ceil(Math.round(totalAET + 1 - 6) / 6) * 0.1
+      ).toFixed(1);
+    } else {
+      totalRoundedHours = (
+        Math.ceil(Math.round(totalAET * multiplier) / 6) * 0.1
+      ).toFixed(1);
+    }
+
+    multiplier -= 0.01;
+  }
+
+  return totalRoundedHours;
+};
+
 async function drawCalendar(monthIndex, year) {
   const { settings, workHistory } = await chrome.storage.local.get([
     "settings",
@@ -139,6 +160,8 @@ async function drawCalendar(monthIndex, year) {
       adjustedMonthIndex === today.getMonth() &&
       adjustedYear === today.getFullYear()
     ) {
+      day.classList.remove("past");
+      day.classList.remove("future");
       day.classList.add("current");
     }
 
@@ -151,7 +174,6 @@ async function drawCalendar(monthIndex, year) {
 
     if (hours !== "0.0") {
       h4.textContent = `${hours} hours`;
-      day.classList.add("worked");
     }
 
     const potentialPayDay = new Date(
@@ -182,27 +204,6 @@ function destroyCalendar() {
     days.removeChild(days.lastChild);
   }
 }
-
-const calcTotalRoundedHours = function (totalAET) {
-  let multiplier = 1.09;
-  let totalRoundedHours = `100`;
-
-  while ((+totalRoundedHours * 60) / totalAET >= 1.1) {
-    if (multiplier < 1) {
-      totalRoundedHours = (
-        Math.ceil(Math.round(totalAET + 1 - 6) / 6) * 0.1
-      ).toFixed(1);
-    } else {
-      totalRoundedHours = (
-        Math.ceil(Math.round(totalAET * multiplier) / 6) * 0.1
-      ).toFixed(1);
-    }
-
-    multiplier -= 0.01;
-  }
-
-  return totalRoundedHours;
-};
 
 nextMonthButton.addEventListener("click", function (e) {
   e.preventDefault();
@@ -241,12 +242,12 @@ currMonthButton.addEventListener("click", function (e) {
 });
 
 chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
-  if (request.message === "updateCalendarDay") {
+  if (request.message === "updateCurrentDay") {
     const todayHoursDisplay = document.querySelector(".current.day > h4");
     if (todayHoursDisplay) {
       todayHoursDisplay.textContent = request.totalRoundedHours + " hours";
     }
-  } else if (request.message === "redrawCalendar") {
+  } else if (request.message === "drawCalendar") {
     destroyCalendar();
     drawCalendar(monthIndex, year);
   }

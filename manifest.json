@@ -13,9 +13,9 @@
   "action": {
     "default_popup": "./pages/popup/popup.html",
     "default_icon": {
-      "16": "./assets/images/rtb_16.png",
-      "24": "./assets/images/rtb_24.png",
-      "32": "./assets/images/rtb_32.png"
+      "16": "./assets/images/rtb_bt_16.png",
+      "24": "./assets/images/rtb_bt_24.png",
+      "32": "./assets/images/rtb_bt_32.png"
     }
   },
   "background": {

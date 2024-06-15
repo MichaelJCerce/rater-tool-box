@@ -29,18 +29,25 @@ const dayNames = [
   saturday,
 ];
 
-const calcTotalRoundedHours = function (totalAET) {
+function calcTotalRoundedHours(totalAET, totalMinutesWorked) {
+  if (totalAET === 0 || totalMinutesWorked === 0) {
+    return "0.0";
+  }
+
+  // let totalRoundedHours = (
+  //   Math.ceil(Math.round(totalMinutesWorked) / 6) * 0.1
+  // ).toFixed(1);
+  let totalRoundedHours = '100'
   let multiplier = 1.09;
-  let totalRoundedHours = `100`;
 
   while ((+totalRoundedHours * 60) / totalAET >= 1.1) {
-    if (multiplier < 1) {
+    if (multiplier >= 1) {
       totalRoundedHours = (
-        Math.ceil(Math.round(totalAET + 1 - 6) / 6) * 0.1
+        Math.ceil(Math.round(totalAET * multiplier) / 6) * 0.1
       ).toFixed(1);
     } else {
       totalRoundedHours = (
-        Math.ceil(Math.round(totalAET * multiplier) / 6) * 0.1
+        Math.ceil(Math.round(totalAET + 1 - 6) / 6) * 0.1
       ).toFixed(1);
     }
 
@@ -48,7 +55,7 @@ const calcTotalRoundedHours = function (totalAET) {
   }
 
   return totalRoundedHours;
-};
+}
 
 async function drawCalendar(monthIndex, year) {
   const { settings, workHistory } = await chrome.storage.local.get([
@@ -169,6 +176,9 @@ async function drawCalendar(monthIndex, year) {
     if (workHistory.years[adjustedYear]) {
       hours = calcTotalRoundedHours(
         workHistory.years[adjustedYear][adjustedMonthIndex][adjustedDate - 1]
+          .totalAET,
+        workHistory.years[adjustedYear][adjustedMonthIndex][adjustedDate - 1]
+          .totalMinutesWorked
       );
     }
 
@@ -244,7 +254,7 @@ currMonthButton.addEventListener("click", function (e) {
 chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
   if (request.message === "updateCurrentDay") {
     const todayHoursDisplay = document.querySelector(".current.day > h4");
-    if (todayHoursDisplay) {
+    if (todayHoursDisplay && request.totalRoundedHours !== "0.0") {
       todayHoursDisplay.textContent = request.totalRoundedHours + " hours";
     }
   } else if (request.message === "drawCalendar") {

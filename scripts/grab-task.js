@@ -7,7 +7,7 @@ async function autoGrabTask() {
     const task = document.querySelector(".ewok-rater-task-option a");
     autoGrabInterval = setInterval(
       () => chrome.runtime.sendMessage({ message: "reload" }),
-      10000
+      settings.refreshRate * 1000
     );
 
     if (task && settings.tempAutoGrab) {

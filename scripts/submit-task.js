@@ -10,17 +10,19 @@ async function submitTask(e) {
   e.preventDefault();
 
   const message = "submitTask";
-  const { settings, tasks, workHistory } = await chrome.storage.local.get([
+  const currentPageID = document.querySelector("#taskIds").value;
+  const { settings, task, workHistory } = await chrome.storage.local.get([
     "settings",
-    "tasks",
+    "task",
     "workHistory",
   ]);
 
   await chrome.runtime.sendMessage({
     message,
     button: this.id,
+    currentPageID,
     settings,
-    tasks,
+    task,
     workHistory,
   });
 
@@ -29,18 +31,28 @@ async function submitTask(e) {
 }
 
 async function autoSubmitTask() {
-  const { settings, tasks } = await chrome.storage.local.get([
+  const { settings, workHistory } = await chrome.storage.local.get([
     "settings",
-    "tasks",
+    "workHistory",
   ]);
-  const url = window.location.href;
-  const aet = +document
+  const today = new Date();
+  const id = document.querySelector("#taskIds").value;
+
+  const aet = document
     .querySelector(".ewok-estimated-task-weight")
-    .textContent.split(" ")[2];
+    .textContent.split(" ");
+  const lowerAET = +aet[0];
+  const upperAET = +aet[2];
+  const averageAET = (lowerAET + upperAET) / 2;
 
   if (
     settings.autoSubmit &&
-    !(url.substring(url.indexOf("=") + 1) in tasks.submitted)
+    !(
+      id in
+      workHistory.years[today.getFullYear()][today.getMonth()][
+        today.getDate() - 1
+      ].tasks
+    )
   ) {
     const button = settings.autoGrab ? submitButton : submitDoneButton;
     const timeWorked = document
@@ -50,12 +62,12 @@ async function autoSubmitTask() {
     const seconds = Number(timeWorked.substring(timeWorked.indexOf(":") + 1));
     const totalMinutesWorked = minutes + seconds / 60;
 
-    if (aet - totalMinutesWorked <= 0) {
+    if (averageAET - totalMinutesWorked <= 0) {
       button.click();
     } else {
       autoSubmitInterval = setTimeout(
         () => button.click(),
-        (aet - totalMinutesWorked) * 60 * 1000
+        (averageAET - totalMinutesWorked) * 60 * 1000
       );
     }
   }

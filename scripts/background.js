@@ -2,14 +2,17 @@ chrome.runtime.onInstalled.addListener(async function (details) {
   if (details.reason === chrome.runtime.OnInstalledReason.INSTALL) {
     await chrome.storage.local.set({
       settings: {
+        alertVolume: 1,
         autoGrab: true,
         autoSubmit: true,
+        badgeText: true,
         openResults: true,
         playAudio: true,
+        refreshRate: 10,
         startMonday: false,
         tempAutoGrab: true,
       },
-      tasks: { current: {}, submitted: {} },
+      task: {},
       workHistory: createWorkHistory(),
     });
   }
@@ -29,41 +32,96 @@ chrome.runtime.onMessage.addListener(async function (
   sendResponse
 ) {
   if (request.message === "updateTask") {
-    const { currentTask, settings, tasks } = request;
+    const { currentTask, settings, task, workHistory } = request;
+    const today = new Date();
 
-    if (!(currentTask.id in tasks.submitted)) {
+    if (
+      !(
+        currentTask.id in
+        workHistory.years[today.getFullYear()][today.getMonth()][
+          today.getDate() - 1
+        ].tasks
+      ) &&
+      currentTask.id !== task.id
+    ) {
       settings.playAudio && playAlert();
-      tasks.current = currentTask;
-      chrome.storage.local.set({ tasks });
+      chrome.storage.local.set({ task: currentTask });
     }
   } else if (request.message === "submitTask") {
-    const { button, settings, tasks, workHistory } = request;
+    const { button, currentPageID, settings, task, workHistory } = request;
+    const today = new Date();
 
-    if (!(tasks.current.id in tasks.submitted)) {
-      const today = new Date();
-      if (!workHistory.years[today.getFullYear()]) {
-        addYear(workHistory, today.getFullYear());
+    if (task.id === currentPageID) {
+      if (
+        !(
+          task.id in
+          workHistory.years[today.getFullYear()][today.getMonth()][
+            today.getDate() - 1
+          ].tasks
+        )
+      ) {
+        if (!workHistory.years[today.getFullYear()]) {
+          addYear(workHistory, today.getFullYear());
+        }
+
+        workHistory.years[today.getFullYear()][today.getMonth()][
+          today.getDate() - 1
+        ].totalAET += (task.lowerAET + task.upperAET) / 2;
+
+        workHistory.years[today.getFullYear()][today.getMonth()][
+          today.getDate() - 1
+        ].tasks[task.id] = {
+          lowerAET: task.lowerAET,
+          upperAET: task.upperAET,
+          startTime: task.startTime,
+          type: task.type,
+        };
       }
 
       workHistory.years[today.getFullYear()][today.getMonth()][
         today.getDate() - 1
-      ] += tasks.current.aet;
-      tasks.submitted[tasks.current.id] = tasks.current.aet;
+      ].totalMinutesWorked += (Date.now() - task.startTime) / 1000 / 60;
+      workHistory.years[today.getFullYear()][today.getMonth()][
+        today.getDate() - 1
+      ].tasks[task.id].submitTime = Date.now();
+
+      task.startTime = Date.now();
+
+      if (button === "ewok-task-submit-done-button" && settings.autoGrab) {
+        settings.tempAutoGrab = false;
+      }
+
+      await chrome.storage.local.set({
+        settings,
+        task,
+        workHistory,
+      });
+
+      setBadge();
     }
-
-    if (button === "ewok-task-submit-done-button" && settings.autoGrab) {
-      settings.tempAutoGrab = false;
-    }
-
-    await chrome.storage.local.set({
-      settings,
-      tasks,
-      workHistory,
-    });
-
-    setBadge();
   } else if (request.message === "updateSettings") {
     await chrome.storage.local.set({ settings: request.newSettings });
+
+    if (request.newSettings.badgeText) {
+      chrome.action.setIcon({
+        path: {
+          16: "../assets/images/rtb_bt_16.png",
+          24: "../assets/images/rtb_bt_24.png",
+          32: "../assets/images/rtb_bt_32.png",
+        },
+      });
+    } else {
+      chrome.action.setIcon({
+        path: {
+          16: "../assets/images/rtb_nbt_16.png",
+          24: "../assets/images/rtb_nbt_24.png",
+          32: "../assets/images/rtb_nbt_32.png",
+        },
+      });
+      chrome.action.setBadgeText({
+        text: "",
+      });
+    }
 
     chrome.tabs.query(
       {
@@ -98,6 +156,8 @@ chrome.runtime.onMessage.addListener(async function (
         }
       }
     );
+
+    setBadge();
   } else if (request.message === "activateTempAutoGrab") {
     const { settings } = request;
 
@@ -109,55 +169,88 @@ chrome.runtime.onMessage.addListener(async function (
 });
 
 chrome.alarms.onAlarm.addListener(async function () {
-  const { tasks, workHistory } = await chrome.storage.local.get([
-    "tasks",
+  const { task, workHistory } = await chrome.storage.local.get([
+    "task",
     "workHistory",
   ]);
+  const today = new Date();
+  let yesterday = new Date();
+  yesterday.setDate(yesterday.getDate() - 1);
+  const taskDate = new Date(task.startTime);
+  if (taskDate.toDateString() === "Invalid Date") {
+    return;
+  }
 
-  await chrome.tabs.query(
-    {
+  if (
+    today.getDate() !== taskDate.getDate() ||
+    today.getMonth() !== taskDate.getMonth() ||
+    today.getFullYear() !== taskDate.getFullYear()
+  ) {
+    const tab = await chrome.tabs.query({
       url: "https://www.raterhub.com/evaluation/rater/task/show?taskIds=*",
-    },
-    function (tabs) {
-      if (tabs.length) {
-        const url = tabs[0].url;
-        if (url.substring(url.indexOf("=") + 1) in tasks.submitted) {
-          let yesterday = new Date();
-          yesterday.setDate(yesterday.getDate() - 1);
+    });
 
-          workHistory.years[yesterday.getFullYear()][yesterday.getMonth()][
-            yesterday.getDate() - 1
-          ] -= tasks.current.aet;
-          delete tasks.submitted[tasks.current.id];
+    if (
+      tab.length &&
+      task.id in
+        workHistory.years[yesterday.getFullYear()][yesterday.getMonth()][
+          yesterday.getDate() - 1
+        ].tasks
+    ) {
+      const taskStartTime =
+        workHistory.years[yesterday.getFullYear()][yesterday.getMonth()][
+          yesterday.getDate() - 1
+        ].tasks[task.id].startTime;
+
+      const taskSubmitTime =
+        workHistory.years[yesterday.getFullYear()][yesterday.getMonth()][
+          yesterday.getDate() - 1
+        ].tasks[task.id].submitTime;
+
+      workHistory.years[yesterday.getFullYear()][yesterday.getMonth()][
+        yesterday.getDate() - 1
+      ].tasks[task.id].totalAET -= (task.lowerAET + task.upperAET) / 2;
+
+      workHistory.years[yesterday.getFullYear()][yesterday.getMonth()][
+        yesterday.getDate() - 1
+      ].tasks[task.id].totalMinutesWorked -=
+        (taskSubmitTime - taskStartTime) / 1000 / 60;
+
+      delete workHistory.years[yesterday.getFullYear()][yesterday.getMonth()][
+        yesterday.getDate() - 1
+      ].tasks[task.id];
+    }
+
+    task.startTime = Date.now();
+
+    await chrome.storage.local.set({
+      task:
+        task.id in
+        workHistory.years[yesterday.getFullYear()][yesterday.getMonth()][
+          yesterday.getDate() - 1
+        ].tasks
+          ? {}
+          : task,
+      workHistory,
+    });
+
+    chrome.runtime.sendMessage(
+      {
+        message: "drawCalendar",
+      },
+      function (response) {
+        if (
+          chrome.runtime.lastError.message ===
+          "Could not establish connection. Receiving end does not exist."
+        ) {
+          console.log("calendar not open");
+          return;
         }
       }
-    }
-  );
+    );
 
-  await chrome.storage.local.set({
-    tasks: {
-      current: tasks.current.id in tasks.submitted ? {} : tasks.current,
-      submitted: {},
-    },
-    workHistory,
-  });
-
-  chrome.runtime.sendMessage(
-    {
-      message: "drawCalendar",
-    },
-    function (response) {
-      if (
-        chrome.runtime.lastError.message ===
-        "Could not establish connection. Receiving end does not exist."
-      ) {
-        console.log("calendar not open");
-        return;
-      }
-    }
-  );
-
-  setBadge();
+    setBadge();
+  }
 });
 
 function addYear(workHistory, year) {
@@ -166,7 +259,11 @@ function addYear(workHistory, year) {
     const numDays = new Date(year, (month + 1) % 12, 0).getDate();
     workHistory.years[year][month] = new Array(numDays);
     for (let day = 0; day < numDays; ++day) {
-      workHistory.years[year][month][day] = 0;
+      workHistory.years[year][month][day] = {
+        tasks: {},
+        totalAET: 0,
+        totalMinutesWorked: 0,
+      };
     }
   }
 }
@@ -177,13 +274,16 @@ function createWorkHistory() {
   return workHistory;
 }
 
-function calcTotalRoundedHours(totalAET) {
-  if (totalAET === 0) {
+function calcTotalRoundedHours(totalAET, totalMinutesWorked) {
+  if (totalAET === 0 || totalMinutesWorked === 0) {
     return "0.0";
   }
 
+  // let totalRoundedHours = (
+  //   Math.ceil(Math.round(totalMinutesWorked) / 6) * 0.1
+  // ).toFixed(1);
+  let totalRoundedHours = "100";
   let multiplier = 1.09;
-  let totalRoundedHours = `100`;
 
   while ((+totalRoundedHours * 60) / totalAET >= 1.1) {
     if (multiplier >= 1) {
@@ -203,7 +303,10 @@ function calcTotalRoundedHours(totalAET) {
 }
 
 async function setBadge() {
-  const { workHistory } = await chrome.storage.local.get("workHistory");
+  const { settings, workHistory } = await chrome.storage.local.get([
+    "settings",
+    "workHistory",
+  ]);
   const today = new Date();
 
   let totalRoundedHours = "0.0";
@@ -211,7 +314,10 @@ async function setBadge() {
     totalRoundedHours = calcTotalRoundedHours(
       workHistory.years[today.getFullYear()][today.getMonth()][
         today.getDate() - 1
-      ]
+      ].totalAET,
+      workHistory.years[today.getFullYear()][today.getMonth()][
+        today.getDate() - 1
+      ].totalMinutesWorked
     );
   }
 
@@ -231,10 +337,12 @@ async function setBadge() {
     }
   );
 
-  chrome.action.setBadgeBackgroundColor({ color: "#92B3F4" });
-  chrome.action.setBadgeText({
-    text: totalRoundedHours,
-  });
+  if (settings.badgeText) {
+    chrome.action.setBadgeBackgroundColor({ color: "#92B3F4" });
+    chrome.action.setBadgeText({
+      text: totalRoundedHours,
+    });
+  }
 }
 
 async function checkAlarm() {
@@ -269,8 +377,9 @@ async function checkOffscreen() {
 }
 
 async function playAlert() {
+  const { settings } = await chrome.storage.local.get("settings");
   const message = "alertRater";
 
   await checkOffscreen();
-  chrome.runtime.sendMessage({ message });
+  chrome.runtime.sendMessage({ message, settings });
 }

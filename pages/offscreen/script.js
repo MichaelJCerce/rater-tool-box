@@ -1,4 +1,4 @@
-chrome.runtime.onMessage.addListener((request) => {
+chrome.runtime.onMessage.addListener(async (request) => {
   if (request.message === "alertRater") {
     const audioCtx = new AudioContext();
     const audio = document.querySelector("audio");
@@ -6,7 +6,7 @@ chrome.runtime.onMessage.addListener((request) => {
     const source = audioCtx.createMediaElementSource(audio);
     const gainNode = audioCtx.createGain();
 
-    gainNode.gain.value = 4;
+    gainNode.gain.value = request.settings.alertVolume;
 
     source.connect(gainNode);
     gainNode.connect(audioCtx.destination);

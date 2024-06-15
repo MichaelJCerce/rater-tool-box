@@ -33,7 +33,12 @@ button {
   cursor: pointer;
 }
 
+input {
+  margin-left: 0;
+}
+
 li div {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
 }
